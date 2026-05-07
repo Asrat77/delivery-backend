@@ -1,4 +1,4 @@
-# Logistics Backend (Express + Prisma + PostgreSQL)
+# Delivery Backend (Express + Prisma + PostgreSQL)
 
 ## Requirements
 
