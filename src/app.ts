@@ -1,0 +1,53 @@
+import cors from "cors";
+import express from "express";
+import helmet from "helmet";
+import morgan from "morgan";
+
+import { errorMiddleware } from "./middleware/error.middleware";
+import { errorResponse, successResponse } from "./utils/response";
+
+import authRoutes from "./modules/auth/auth.routes";
+import usersRoutes from "./modules/users/users.routes";
+import driversRoutes from "./modules/drivers/drivers.routes";
+import driverSelfRoutes from "./modules/driver-self/driver-self.routes";
+import shipmentsRoutes from "./modules/shipments/shipments.routes";
+import trackingRoutes from "./modules/tracking/tracking.routes";
+import paymentsRoutes from "./modules/payments/payments.routes";
+import codRoutes from "./modules/cod/cod.routes";
+import pricingRoutes from "./modules/pricing/pricing.routes";
+import integrationsRoutes from "./modules/integrations/integrations.routes";
+import reportsRoutes from "./modules/reports/reports.routes";
+
+const app = express();
+
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"));
+
+app.get("/health", (_req, res) => {
+  return res.status(200).json(successResponse("OK", { status: "ok" }));
+});
+
+// Route mounting: NO /api prefix
+app.use("/auth", authRoutes);
+app.use("/users", usersRoutes);
+app.use("/drivers", driversRoutes);
+app.use("/driver", driverSelfRoutes);
+app.use("/shipments", shipmentsRoutes);
+app.use("/track", trackingRoutes);
+app.use("/payments", paymentsRoutes);
+app.use("/cod", codRoutes);
+app.use("/pricing", pricingRoutes);
+app.use("/integrations", integrationsRoutes);
+app.use("/reports", reportsRoutes);
+
+app.use((_req, res) => {
+  return res.status(404).json(errorResponse("Route not found", 404, null));
+});
+
+app.use(errorMiddleware);
+
+export default app;
+

@@ -1,0 +1,321 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  DRIVER
+  CUSTOMER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ShipmentStatus {
+  CREATED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  TELEBIRR
+  CBE_BIRR
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum NotificationType {
+  SHIPMENT_CREATED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  PAYMENT_RECEIVED
+  COD_COLLECTED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum DeliveryProofType {
+  OTP
+  PHOTO
+}
+
+enum PricingType {
+  FIXED
+  PER_KG
+}
+
+enum ThirdPartyProvider {
+  DHL
+  MOCK
+}
+
+enum ThirdPartyIntegrationStatus {
+  PENDING
+  SUBMITTED
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String?    @unique
+  phone        String     @unique
+  passwordHash String
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+
+  driverProfile Driver?
+
+  createdShipments Shipment[] @relation("ShipmentCreatedBy")
+  assignedByMe     Shipment[] @relation("ShipmentAssignedBy")
+
+  shipmentEvents ShipmentEvent[]
+  notifications  Notification[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Driver {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  isAvailable Boolean @default(true)
+  currentLat  Decimal? @db.Decimal(10, 7)
+  currentLng  Decimal? @db.Decimal(10, 7)
+
+  assignedShipments Shipment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isAvailable])
+}
+
+model Shipment {
+  id             String @id @default(uuid())
+  trackingNumber String @unique
+
+  senderName  String
+  senderPhone String
+
+  receiverName  String
+  receiverPhone String
+
+  pickupAddress   String
+  deliveryAddress String
+
+  pickupLat   Decimal? @db.Decimal(10, 7)
+  pickupLng   Decimal? @db.Decimal(10, 7)
+  deliveryLat Decimal? @db.Decimal(10, 7)
+  deliveryLng Decimal? @db.Decimal(10, 7)
+
+  packageType String
+  weight      Decimal @db.Decimal(10, 2)
+  price       Decimal @db.Decimal(10, 2)
+
+  status ShipmentStatus @default(CREATED)
+
+  createdById String?
+  createdBy   User? @relation("ShipmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  assignedDriverId String?
+  assignedDriver   Driver? @relation(fields: [assignedDriverId], references: [id], onDelete: SetNull)
+
+  assignedById String?
+  assignedBy   User? @relation("ShipmentAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  events         ShipmentEvent[]
+  deliveryProof  DeliveryProof?
+  payment        Payment?
+  codTransaction CodTransaction?
+  thirdPartyLogs ThirdPartyIntegrationLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trackingNumber])
+  @@index([status])
+  @@index([assignedDriverId])
+  @@index([createdById])
+  @@index([createdAt])
+  @@index([receiverPhone])
+  @@index([senderPhone])
+}
+
+model ShipmentEvent {
+  id         String   @id @default(uuid())
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  status ShipmentStatus
+
+  locationText String?
+  lat          Decimal? @db.Decimal(10, 7)
+  lng          Decimal? @db.Decimal(10, 7)
+
+  actorId String?
+  actor   User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  timestamp DateTime @default(now())
+
+  @@index([shipmentId])
+  @@index([status])
+  @@index([timestamp])
+}
+
+model DeliveryProof {
+  id         String    @id @default(uuid())
+  shipmentId String    @unique
+  shipment   Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  type DeliveryProofType @default(OTP)
+
+  otpCodeHash  String?
+  otpExpiresAt DateTime?
+  verified     Boolean @default(false)
+  verifiedAt   DateTime?
+
+  photoUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([verified])
+}
+
+model Payment {
+  id         String   @id @default(uuid())
+  shipmentId String  @unique
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  amount Decimal @db.Decimal(10, 2)
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+
+  providerReference String?
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([method])
+}
+
+model CodTransaction {
+  id         String   @id @default(uuid())
+  shipmentId String  @unique
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  amount Decimal @db.Decimal(10, 2)
+  collected Boolean @default(false)
+  collectedAt DateTime?
+
+  collectedByDriverId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([collected])
+}
+
+model PricingRule {
+  id String @id @default(uuid())
+
+  name String
+  type PricingType
+
+  packageType String?
+
+  fixedPrice Decimal? @db.Decimal(10, 2)
+  pricePerKg Decimal? @db.Decimal(10, 2)
+
+  minWeight Decimal? @db.Decimal(10, 2)
+  maxWeight Decimal? @db.Decimal(10, 2)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([packageType])
+  @@index([isActive])
+}
+
+model Notification {
+  id String @id @default(uuid())
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  shipmentId String?
+
+  type NotificationType
+  message String
+  recipientPhone String?
+
+  status NotificationStatus @default(PENDING)
+  failureReason String?
+  retryCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  sentAt DateTime?
+
+  @@index([status])
+  @@index([type])
+  @@index([shipmentId])
+  @@index([createdAt])
+}
+
+model ThirdPartyIntegrationLog {
+  id String @id @default(uuid())
+
+  shipmentId String?
+  shipment   Shipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+
+  provider ThirdPartyProvider
+  status   ThirdPartyIntegrationStatus @default(PENDING)
+
+  requestPayload  Json?
+  responsePayload Json?
+  errorMessage    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([provider])
+  @@index([status])
+  @@index([shipmentId])
+}
