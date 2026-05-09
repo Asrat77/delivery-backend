@@ -11,5 +11,6 @@ declare module "swagger-ui-dist" {
   }
   const serve: RequestHandler[];
   function setup(swaggerDocument: unknown, options?: SwaggerUIOptions): RequestHandler;
-  export { serve, setup };
+  function getAbsoluteFSPath(): string;
+  export { serve, setup, getAbsoluteFSPath };
 }
