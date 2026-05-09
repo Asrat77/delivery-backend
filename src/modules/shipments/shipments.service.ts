@@ -1,4 +1,4 @@
-import type { PaymentMethod, ShipmentStatus } from "@prisma/client";
+import type { DeliveryType, PaymentMethod, ShipmentStatus } from "@prisma/client";
 import QRCode from "qrcode";
 import { prisma } from "../../config/prisma";
 import { getEnv } from "../../config/env";
@@ -36,6 +36,7 @@ export async function createShipment(input: {
     packageType: string;
     weight: number;
     price?: number;
+    deliveryType?: DeliveryType;
     paymentMethod: PaymentMethod;
     codAmount?: number;
   };
@@ -72,6 +73,7 @@ export async function createShipment(input: {
         packageType: input.data.packageType,
         weight,
         price: computedPrice,
+        deliveryType: input.data.deliveryType,
         createdById: input.actorRole === "DRIVER" ? null : input.actorUserId,
         events: { create: { status: "CREATED", actorId: input.actorUserId } },
         deliveryProof: {

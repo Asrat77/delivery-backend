@@ -22,6 +22,7 @@ export const createShipmentSchema = {
     packageType: z.string().min(1),
     weight: z.coerce.number().positive(),
     price: z.coerce.number().positive().optional(),
+    deliveryType: z.enum(["BICYCLE", "MOTORBIKE"]).optional(),
     paymentMethod: z.enum(["TELEBIRR", "CBE_BIRR", "CASH"]).default("CASH"),
     codAmount: z.coerce.number().positive().optional(),
   }),

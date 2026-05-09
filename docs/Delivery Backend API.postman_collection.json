@@ -8071,6 +8071,132 @@
       "description": "",
       "item": [
         {
+          "id": "calc-price-1778357185204",
+          "name": "Calculate price",
+          "request": {
+            "name": "Calculate price",
+            "description": {},
+            "url": {
+              "path": [
+                "pricing",
+                "calculate"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "disabled": false
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deliveryType\": \"MOTORBIKE\",\n  \"pickupLat\": 9.0054,\n  \"pickupLng\": 38.7636,\n  \"deliveryLat\": 9.0321,\n  \"deliveryLng\": 38.7614\n}",
+              "options": {
+                "raw": {
+                  "headerFamily": "json",
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "calc-price-resp-1778357185205",
+              "name": "Price calculated",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "pricing",
+                    "calculate"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"deliveryType\": \"MOTORBIKE\",\n  \"pickupLat\": 9.0054,\n  \"pickupLng\": 38.7636,\n  \"deliveryLat\": 9.0321,\n  \"deliveryLng\": 38.7614\n}",
+                  "options": {
+                    "raw": {
+                      "headerFamily": "json",
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"price\": \"<number>\",\n  \"distance\": \"<number>\",\n  \"deliveryType\": \"MOTORBIKE\",\n  \"breakdown\": {\n    \"baseFare\": \"<number>\",\n    \"distanceCharge\": \"<number>\",\n    \"ratePerKm\": \"<number>\"\n  }\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [
+            {
+              "listen": "pre-request",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Auto-set Bearer token from login response",
+                  "if (pm.collectionVariables.get('authToken')) {",
+                  "  pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + pm.collectionVariables.get('authToken') });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
           "id": "9f93e621-8022-410a-aff3-5363477cd9b6",
           "name": "Create a pricing rule",
           "request": {

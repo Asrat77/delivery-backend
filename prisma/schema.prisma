@@ -68,6 +68,11 @@ enum PricingType {
   PER_KG
 }
 
+enum DeliveryType {
+  BICYCLE
+  MOTORBIKE
+}
+
 enum ThirdPartyProvider {
   DHL
   MOCK
@@ -160,6 +165,7 @@ model Shipment {
   packageType String
   weight      Decimal @db.Decimal(10, 2)
   price       Decimal @db.Decimal(10, 2)
+  deliveryType DeliveryType?
 
   status ShipmentStatus @default(CREATED)
 
@@ -275,6 +281,10 @@ model PricingRule {
 
   packageType String?
 
+  deliveryType DeliveryType?
+  baseFare     Decimal @default(30) @db.Decimal(10, 2)
+  ratePerKm    Decimal @db.Decimal(10, 2)
+
   fixedPrice Decimal? @db.Decimal(10, 2)
   pricePerKg Decimal? @db.Decimal(10, 2)
 
@@ -289,6 +299,7 @@ model PricingRule {
   @@index([type])
   @@index([packageType])
   @@index([isActive])
+  @@index([deliveryType])
 }
 
 model Notification {

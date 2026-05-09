@@ -66,27 +66,29 @@ async function main() {
   });
 
   await prisma.pricingRule.upsert({
-    where: { id: "seed-fixed" },
+    where: { id: "seed-bicycle" },
     update: { isActive: true },
     create: {
-      id: "seed-fixed",
-      name: "Fixed Small Package",
-      type: "FIXED",
-      packageType: "SMALL",
-      fixedPrice: 150,
+      id: "seed-bicycle",
+      name: "City Bicycle Delivery",
+      type: "PER_KG",
+      deliveryType: "BICYCLE",
+      baseFare: 30,
+      ratePerKm: 10,
       isActive: true,
     },
   });
 
   await prisma.pricingRule.upsert({
-    where: { id: "seed-perkg" },
+    where: { id: "seed-motorbike" },
     update: { isActive: true },
     create: {
-      id: "seed-perkg",
-      name: "Per KG Standard",
+      id: "seed-motorbike",
+      name: "City Motorbike Delivery",
       type: "PER_KG",
-      pricePerKg: 40,
-      minWeight: 0.1,
+      deliveryType: "MOTORBIKE",
+      baseFare: 50,
+      ratePerKm: 15,
       isActive: true,
     },
   });

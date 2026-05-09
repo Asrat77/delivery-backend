@@ -3,6 +3,7 @@ import { authMiddleware } from "../../middleware/auth.middleware";
 import { requireRole } from "../../middleware/role.middleware";
 import { validate } from "../../middleware/validate.middleware";
 import * as pricingController from "./pricing.controller";
+import * as priceCalculationController from "./price-calculation.controller";
 import {
   createPricingSchema,
   listPricingSchema,
@@ -10,6 +11,7 @@ import {
   updatePricingSchema,
   updatePricingStatusSchema,
 } from "./pricing.validation";
+import { calculatePriceSchema } from "./price-calculation.validation";
 
 const router = Router();
 
@@ -21,6 +23,13 @@ router.get("/:id", validate(pricingIdParamsSchema), pricingController.get);
 router.patch("/:id", validate(updatePricingSchema), pricingController.update);
 router.patch("/:id/status", validate(updatePricingStatusSchema), pricingController.updateStatus);
 router.delete("/:id", validate(pricingIdParamsSchema), pricingController.remove);
+
+router.post(
+  "/calculate",
+  authMiddleware,
+  validate(calculatePriceSchema),
+  priceCalculationController.calculate
+);
 
 export default router;
 
