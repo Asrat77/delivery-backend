@@ -221,11 +221,13 @@ export async function assignDriver(input: { shipmentId: string; driverId: string
   if (!driver) throw new ApiError(404, "Driver not found");
   if (driver.user.role !== "DRIVER") throw new ApiError(400, "User is not a DRIVER");
 
-  const shipment = await prisma.shipment.update({
+  const shipment = await prisma.shipment.findUnique({ where: { id: input.shipmentId } });
+  if (!shipment) throw new ApiError(404, "Shipment not found");
+
+  return prisma.shipment.update({
     where: { id: input.shipmentId },
     data: { assignedDriverId: driver.id, assignedById: input.assignedById },
   });
-  return shipment;
 }
 
 export async function updateShipmentStatus(input: {
