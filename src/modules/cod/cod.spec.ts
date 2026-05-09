@@ -43,7 +43,7 @@ describe("COD", () => {
     expect(createdDriver.status).toBe(201);
 
     await request(app).post("/auth/login").send({ emailOrPhone: email, password: "Password123!" }).expect(200);
-    const verifyRes = await request(app).post("/auth/verify-login").send({ phone, otp: "123456" }).expect(200);
+    const verifyRes = await request(app).post("/auth/verify-login").send({ phone, otp: "12345" }).expect(200);
     const otherToken = verifyRes.body.data.token as string;
 
     const { token: staffToken } = await loginAsStaff();

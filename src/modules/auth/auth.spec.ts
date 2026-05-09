@@ -43,7 +43,7 @@ describe("AUTH — Registration OTP Flow", () => {
 
     const res = await request(app)
       .post("/auth/verify-registration")
-      .send({ phone: PHONE_B, otp: "123456" })
+      .send({ phone: PHONE_B, otp: "12345" })
       .expect(201);
 
     expect(res.body.data.token).toBeTruthy();
@@ -60,7 +60,7 @@ describe("AUTH — Registration OTP Flow", () => {
 
     const res = await request(app)
       .post("/auth/verify-registration")
-      .send({ phone: PHONE_C, otp: "999999" })
+      .send({ phone: PHONE_C, otp: "99999" })
       .expect(400);
 
     expect(res.body.message).toBe("Invalid OTP");
@@ -69,7 +69,7 @@ describe("AUTH — Registration OTP Flow", () => {
   it("POST /auth/verify-registration should reject when no OTP requested", async () => {
     const res = await request(app)
       .post("/auth/verify-registration")
-      .send({ phone: "+251900000001", otp: "123456" })
+      .send({ phone: "+251900000001", otp: "12345" })
       .expect(400);
 
     expect(res.body.message).toBe("No OTP found. Request a new one.");
@@ -83,7 +83,7 @@ describe("AUTH — Registration OTP Flow", () => {
 
     await request(app)
       .post("/auth/verify-registration")
-      .send({ phone: PHONE_D, otp: "123456" })
+      .send({ phone: PHONE_D, otp: "12345" })
       .expect(201);
 
     const res = await request(app)
@@ -146,7 +146,7 @@ describe("AUTH — Login OTP Flow", () => {
 
     const res = await request(app)
       .post("/auth/verify-login")
-      .send({ phone: "+251900000001", otp: "123456" })
+      .send({ phone: "+251900000001", otp: "12345" })
       .expect(200);
 
     expect(res.body.data.token).toBeTruthy();
@@ -161,7 +161,7 @@ describe("AUTH — Login OTP Flow", () => {
 
     const res = await request(app)
       .post("/auth/verify-login")
-      .send({ phone: "+251900000002", otp: "999999" })
+      .send({ phone: "+251900000002", otp: "99999" })
       .expect(400);
 
     expect(res.body.message).toBe("Invalid OTP");
@@ -170,7 +170,7 @@ describe("AUTH — Login OTP Flow", () => {
   it("POST /auth/verify-login should reject no OTP requested", async () => {
     const res = await request(app)
       .post("/auth/verify-login")
-      .send({ phone: "+251900000001", otp: "123456" })
+      .send({ phone: "+251900000001", otp: "12345" })
       .expect(400);
 
     expect(res.body.message).toBe("No OTP found. Request a new one.");
@@ -184,7 +184,7 @@ describe("AUTH — Login OTP Flow", () => {
 
     await request(app)
       .post("/auth/verify-registration")
-      .send({ phone: PHONE_E, otp: "123456" })
+      .send({ phone: PHONE_E, otp: "12345" })
       .expect(201);
 
     await prisma.user.update({ where: { phone: PHONE_E }, data: { status: "INACTIVE" } });

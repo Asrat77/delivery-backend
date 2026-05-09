@@ -56,7 +56,7 @@ export const updateShipmentStatusSchema = {
 export const verifyOtpSchema = {
   params: shipmentIdParamsSchema.params,
   body: z.object({
-    otp: z.string().regex(/^\d{6}$/),
+    otp: z.string().regex(/^\d{5}$/),
   }),
 };
 

@@ -15,7 +15,7 @@ function getPhone(emailOrPhone: string): string {
 async function login(emailOrPhone: string) {
   await request(app).post("/auth/login").send({ emailOrPhone, password: "Password123!" }).expect(200);
   const phone = getPhone(emailOrPhone);
-  const res = await request(app).post("/auth/verify-login").send({ phone, otp: "123456" }).expect(200);
+  const res = await request(app).post("/auth/verify-login").send({ phone, otp: "12345" }).expect(200);
   return res;
 }
 

@@ -12,7 +12,7 @@ export const registerSchema = {
 export const verifyRegistrationSchema = {
   body: z.object({
     phone: z.string().min(6),
-    otp: z.string().length(6),
+    otp: z.string().length(5),
   }),
 };
 
@@ -26,6 +26,6 @@ export const loginSchema = {
 export const verifyLoginSchema = {
   body: z.object({
     phone: z.string().min(6),
-    otp: z.string().length(6),
+    otp: z.string().length(5),
   }),
 };

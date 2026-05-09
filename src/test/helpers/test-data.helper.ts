@@ -30,7 +30,7 @@ export async function assignDriverToShipment(token: string, shipmentId: string, 
 }
 
 export async function verifyShipmentOtp(token: string, shipmentId: string) {
-  const otp = "123456";
+  const otp = "12345";
   const otpHash = await hashOtp(otp);
 
   await prisma.deliveryProof.updateMany({

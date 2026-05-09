@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { getEnv } from "../config/env";
 
 export function generateOtp() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(Math.floor(10000 + Math.random() * 90000));
 }
 
 export async function hashOtp(otp: string) {
@@ -17,7 +17,7 @@ export function otpExpiresAt(minutes: number) {
   return new Date(Date.now() + minutes * 60 * 1000);
 }
 
-export const MOCK_OTP_CODE = "123456";
+export const MOCK_OTP_CODE = "12345";
 
 export function isMockSmsProvider(): boolean {
   return getEnv().SMS_PROVIDER === "mock";
