@@ -1,0 +1,2898 @@
+openapi: "3.0.3"
+
+info:
+  title: Delivery Backend API
+  version: 1.0.0
+  description: |
+    Logistics delivery management API for managing shipments, drivers, payments,
+    and real-time tracking. Built with Express 5 + TypeScript + Prisma + PostgreSQL.
+
+    **Auth flow:**
+    1. `POST /auth/register` or `POST /auth/login` to get a JWT token
+    2. Include `Authorization: Bearer <token>` in subsequent requests
+
+    **Seed credentials** (dev):
+    - ADMIN: `admin@example.com` / `Password123!`
+    - STAFF: `staff@example.com` / `Password123!`
+    - DRIVER: `driver@example.com` / `Password123!`
+    - CUSTOMER: `customer@example.com` / `Password123!`
+
+    **Response envelope:**
+    ```
+    // Success
+    { "success": true, "message": "string", "data": { ... } }
+
+    // Error
+    { "success": false, "message": "string", "statusCode": 400, "details": null }
+
+    // Validation error (422)
+    { "success": false, "message": "Validation Error", "statusCode": 422, "details": { ... } }
+    ```
+
+servers:
+  - url: http://localhost:{port}
+    description: Local development
+    variables:
+      port:
+        default: "3000"
+        description: Server port (set via PORT env)
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: ok
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new customer account
+      operationId: authRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone, password]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  example: Alice
+                email:
+                  type: string
+                  format: email
+                  example: alice@example.com
+                phone:
+                  type: string
+                  minLength: 6
+                  example: "+251911111111"
+                password:
+                  type: string
+                  minLength: 8
+                  format: password
+                  example: Password123!
+      responses:
+        "201":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error409"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error422"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email/phone and password
+      operationId: authLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [emailOrPhone, password]
+              properties:
+                emailOrPhone:
+                  type: string
+                  minLength: 3
+                  example: admin@example.com
+                password:
+                  type: string
+                  minLength: 1
+                  format: password
+                  example: Password123!
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: User is inactive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error422"
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current authenticated user
+      operationId: authMe
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+
+  /users:
+    post:
+      tags: [Users]
+      summary: Create a new user (any role)
+      operationId: usersCreate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone, password, role]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                  minLength: 6
+                password:
+                  type: string
+                  minLength: 8
+                  format: password
+                role:
+                  $ref: "#/components/schemas/UserRole"
+                status:
+                  $ref: "#/components/schemas/UserStatus"
+                  default: ACTIVE
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error409"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error422"
+
+    get:
+      tags: [Users]
+      summary: List users (paginated, filterable)
+      operationId: usersList
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - in: query
+          name: role
+          schema:
+            $ref: "#/components/schemas/UserRole"
+          description: Filter by role
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/UserStatus"
+          description: Filter by status
+      responses:
+        "200":
+          description: Paginated user list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/User"
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      operationId: usersGetById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /users/{id}/status:
+    patch:
+      tags: [Users]
+      summary: Update user active/inactive status
+      operationId: usersUpdateStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: "#/components/schemas/UserStatus"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /users/{id}/role:
+    patch:
+      tags: [Users]
+      summary: Change user role
+      operationId: usersUpdateRole
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  $ref: "#/components/schemas/UserRole"
+      responses:
+        "200":
+          description: Role updated (Driver profile created/removed as needed)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /drivers:
+    get:
+      tags: [Drivers]
+      summary: List drivers (paginated, filterable by availability)
+      operationId: driversList
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - in: query
+          name: isAvailable
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Filter by driver availability
+      responses:
+        "200":
+          description: Paginated driver list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/DriverWithUser"
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /drivers/{id}:
+    get:
+      tags: [Drivers]
+      summary: Get driver by ID
+      operationId: driversGetById
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Driver ID (not User ID)
+      responses:
+        "200":
+          description: Driver found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/DriverWithUser"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Driver not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /driver/shipments:
+    get:
+      tags: [Driver Self]
+      summary: Get shipments assigned to the authenticated driver
+      operationId: driverSelfShipments
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of assigned shipments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Shipment"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires DRIVER role)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /driver/update-location:
+    put:
+      tags: [Driver Self]
+      summary: Update driver's current GPS location
+      operationId: driverSelfUpdateLocation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lat, lng]
+              properties:
+                lat:
+                  type: number
+                  minimum: -90
+                  maximum: 90
+                  example: 9.03
+                lng:
+                  type: number
+                  minimum: -180
+                  maximum: 180
+                  example: 38.74
+      responses:
+        "200":
+          description: Location updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Driver"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires DRIVER role)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /driver/update-status/{shipmentId}:
+    put:
+      tags: [Driver Self]
+      summary: Update shipment status (driver-initiated transitions)
+      operationId: driverSelfUpdateStatus
+      description: |
+        Allowed status transitions for drivers:
+        - CREATED → PICKED_UP
+        - PICKED_UP → IN_TRANSIT
+        - IN_TRANSIT → OUT_FOR_DELIVERY
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: shipmentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [PICKED_UP, IN_TRANSIT, OUT_FOR_DELIVERY]
+                  description: Next status for the shipment
+                locationText:
+                  type: string
+                  minLength: 1
+                  description: Free-text location description
+                lat:
+                  type: number
+                  minimum: -90
+                  maximum: 90
+                lng:
+                  type: number
+                  minimum: -180
+                  maximum: 180
+      responses:
+        "200":
+          description: Shipment status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Shipment"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (not assigned to this driver or wrong role)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Shipment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /shipments:
+    post:
+      tags: [Shipments]
+      summary: Create a new shipment
+      operationId: shipmentsCreate
+      description: |
+        Generates a unique tracking number (DLV-YYYYMMDD-XXXXXX), creates
+        shipment events, delivery proof with OTP, and a payment record.
+        Optionally creates a COD transaction if codAmount > 0.
+        In development mode, the raw OTP is returned as `devOtp`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [senderName, senderPhone, receiverName, receiverPhone, pickupAddress, deliveryAddress, packageType, weight]
+              properties:
+                senderName:
+                  type: string
+                  minLength: 1
+                senderPhone:
+                  type: string
+                  minLength: 6
+                receiverName:
+                  type: string
+                  minLength: 1
+                receiverPhone:
+                  type: string
+                  minLength: 6
+                pickupAddress:
+                  type: string
+                  minLength: 1
+                deliveryAddress:
+                  type: string
+                  minLength: 1
+                pickupLat:
+                  type: number
+                  minimum: -90
+                  maximum: 90
+                pickupLng:
+                  type: number
+                  minimum: -180
+                  maximum: 180
+                deliveryLat:
+                  type: number
+                  minimum: -90
+                  maximum: 90
+                deliveryLng:
+                  type: number
+                  minimum: -180
+                  maximum: 180
+                packageType:
+                  type: string
+                  minLength: 1
+                  example: DOCUMENT
+                weight:
+                  type: number
+                  exclusiveMinimum: 0
+                  example: 2.5
+                price:
+                  type: number
+                  exclusiveMinimum: 0
+                  description: If omitted, auto-computed from active PricingRules
+                paymentMethod:
+                  $ref: "#/components/schemas/PaymentMethod"
+                  default: CASH
+                codAmount:
+                  type: number
+                  exclusiveMinimum: 0
+                  description: If > 0, creates a COD transaction
+      responses:
+        "201":
+          description: Shipment created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/ShipmentCreateResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error422"
+
+    get:
+      tags: [Shipments]
+      summary: List shipments (paginated, filterable)
+      operationId: shipmentsList
+      description: |
+        CUSTOMER role: only sees their own shipments (createdById).
+        ADMIN/STAFF: sees all shipments.
+        DRIVER: gets 403 (use /driver/shipments instead).
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/ShipmentStatus"
+          description: Filter by shipment status
+        - in: query
+          name: assignedDriverId
+          schema:
+            type: string
+            format: uuid
+          description: Filter by assigned driver
+        - in: query
+          name: trackingNumber
+          schema:
+            type: string
+            minLength: 3
+          description: Partial case-insensitive search on tracking number
+        - in: query
+          name: senderPhone
+          schema:
+            type: string
+            minLength: 3
+          description: Partial search on sender phone
+        - in: query
+          name: receiverPhone
+          schema:
+            type: string
+            minLength: 3
+          description: Partial search on receiver phone
+        - in: query
+          name: dateFrom
+          schema:
+            type: string
+            format: date-time
+          description: Filter shipments created on or after this date
+        - in: query
+          name: dateTo
+          schema:
+            type: string
+            format: date-time
+          description: Filter shipments created on or before this date
+      responses:
+        "200":
+          description: Paginated shipment list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ShipmentListItem"
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (DRIVER role not allowed here)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /shipments/{id}:
+    get:
+      tags: [Shipments]
+      summary: Get full shipment details by ID
+      operationId: shipmentsGetById
+      description: |
+        Returns shipment with nested events, payment, COD, delivery proof, driver, and creator.
+        Access control depends on role.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/shipmentId"
+      responses:
+        "200":
+          description: Full shipment details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/ShipmentDetail"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (access denied based on role)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Shipment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /shipments/{id}/assign-driver:
+    patch:
+      tags: [Shipments]
+      summary: Assign a driver to a shipment
+      operationId: shipmentsAssignDriver
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/shipmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [driverId]
+              properties:
+                driverId:
+                  type: string
+                  format: uuid
+                  description: Driver record ID (not User ID)
+      responses:
+        "200":
+          description: Driver assigned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Shipment"
+        "400":
+          description: User is not a DRIVER
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error400"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Driver or Shipment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /shipments/{id}/status:
+    patch:
+      tags: [Shipments]
+      summary: Update shipment status (admin/staff)
+      operationId: shipmentsUpdateStatus
+      description: |
+        Allowed transitions:
+        - CREATED → PICKED_UP | CANCELLED
+        - PICKED_UP → IN_TRANSIT | CANCELLED
+        - IN_TRANSIT → OUT_FOR_DELIVERY | CANCELLED
+        - OUT_FOR_DELIVERY → DELIVERED | CANCELLED
+        - DELIVERED / CANCELLED → (none)
+
+        Special rules:
+        - DELIVERED requires OTP verification first; COD must be collected if exists.
+        - CANCELLED not allowed if already delivered.
+        - OUT_FOR_DELIVERY sends SMS to receiver.
+        - DELIVERED sends SMS to receiver.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/shipmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: "#/components/schemas/ShipmentStatus"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Shipment"
+        "400":
+          description: Invalid transition or prerequisite not met
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error400"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Shipment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /shipments/{id}/qr:
+    get:
+      tags: [Shipments]
+      summary: Get QR code for a shipment (base64 PNG data URL)
+      operationId: shipmentsGetQr
+      description: The QR code encodes the public tracking URL.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/shipmentId"
+      responses:
+        "200":
+          description: QR code data URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      dataUrl:
+                        type: string
+                        format: uri
+                        example: "data:image/png;base64,iVBOR..."
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "404":
+          description: Shipment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /shipments/{id}/verify-otp:
+    post:
+      tags: [Shipments]
+      summary: Verify delivery OTP
+      operationId: shipmentsVerifyOtp
+      description: Verify the 6-digit OTP for delivery proof. Required before marking as DELIVERED.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/shipmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [otp]
+              properties:
+                otp:
+                  type: string
+                  pattern: '^\d{6}$'
+                  description: 6-digit OTP code
+                  example: "123456"
+      responses:
+        "200":
+          description: OTP verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      verified:
+                        type: boolean
+                        example: true
+                      verifiedAt:
+                        type: string
+                        format: date-time
+        "400":
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error400"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "404":
+          description: Delivery proof not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /track/{trackingNumber}:
+    get:
+      tags: [Tracking]
+      summary: Track a shipment by tracking number (public, no auth)
+      operationId: trackShipment
+      parameters:
+        - in: path
+          name: trackingNumber
+          required: true
+          schema:
+            type: string
+            minLength: 3
+          example: DLV-20260508-A3B5C7
+      responses:
+        "200":
+          description: Tracking info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/TrackingInfo"
+        "404":
+          description: Shipment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /payments/{shipmentId}:
+    get:
+      tags: [Payments]
+      summary: Get payment for a shipment
+      operationId: paymentsGetByShipment
+      description: |
+        CUSTOMER: only their own shipments.
+        DRIVER: gets 403.
+        ADMIN/STAFF: always allowed.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/shipmentIdPath"
+      responses:
+        "200":
+          description: Payment info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Payment"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /payments/{shipmentId}/mark-paid:
+    patch:
+      tags: [Payments]
+      summary: Mark a payment as paid
+      operationId: paymentsMarkPaid
+      description: Sends PAYMENT_RECEIVED notification.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/shipmentIdPath"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                providerReference:
+                  type: string
+                  minLength: 1
+                  description: e.g. "telebirr-tx-123"
+      responses:
+        "200":
+          description: Payment marked as paid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Payment"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /cod/{shipmentId}:
+    get:
+      tags: [COD]
+      summary: Get COD transaction for a shipment
+      operationId: codGetByShipment
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/shipmentIdPath"
+      responses:
+        "200":
+          description: COD transaction info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/CodTransaction"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: COD transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /cod/{shipmentId}/mark-collected:
+    patch:
+      tags: [COD]
+      summary: Mark COD as collected
+      operationId: codMarkCollected
+      description: |
+        DRIVER: only if assigned to this shipment (records collectedByDriverId).
+        ADMIN/STAFF: always allowed.
+        Sends COD_COLLECTED notification.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/shipmentIdPath"
+      responses:
+        "200":
+          description: COD collected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/CodTransaction"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: COD transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /pricing:
+    post:
+      tags: [Pricing]
+      summary: Create a pricing rule
+      operationId: pricingCreate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, type]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                type:
+                  $ref: "#/components/schemas/PricingType"
+                packageType:
+                  type: string
+                  example: DOCUMENT
+                fixedPrice:
+                  type: number
+                  exclusiveMinimum: 0
+                  description: Required if type = FIXED
+                pricePerKg:
+                  type: number
+                  exclusiveMinimum: 0
+                  description: Required if type = PER_KG
+                minWeight:
+                  type: number
+                  exclusiveMinimum: 0
+                maxWeight:
+                  type: number
+                  exclusiveMinimum: 0
+      responses:
+        "201":
+          description: Pricing rule created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/PricingRule"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error422"
+
+    get:
+      tags: [Pricing]
+      summary: List pricing rules (paginated)
+      operationId: pricingList
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - in: query
+          name: isActive
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Filter by active status
+      responses:
+        "200":
+          description: Paginated pricing rule list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/PricingRule"
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /pricing/{id}:
+    get:
+      tags: [Pricing]
+      summary: Get a pricing rule by ID
+      operationId: pricingGetById
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/pricingRuleId"
+      responses:
+        "200":
+          description: Pricing rule found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/PricingRule"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Pricing rule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+    patch:
+      tags: [Pricing]
+      summary: Update a pricing rule (partial)
+      operationId: pricingUpdate
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/pricingRuleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                type:
+                  $ref: "#/components/schemas/PricingType"
+                packageType:
+                  type: string
+                fixedPrice:
+                  type: number
+                  exclusiveMinimum: 0
+                pricePerKg:
+                  type: number
+                  exclusiveMinimum: 0
+                minWeight:
+                  type: number
+                  exclusiveMinimum: 0
+                maxWeight:
+                  type: number
+                  exclusiveMinimum: 0
+      responses:
+        "200":
+          description: Pricing rule updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/PricingRule"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Pricing rule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+    delete:
+      tags: [Pricing]
+      summary: Delete a pricing rule
+      operationId: pricingDelete
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/pricingRuleId"
+      responses:
+        "200":
+          description: Pricing rule deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Pricing rule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /pricing/{id}/status:
+    patch:
+      tags: [Pricing]
+      summary: Toggle pricing rule active status
+      operationId: pricingToggleStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/pricingRuleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isActive]
+              properties:
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/PricingRule"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "404":
+          description: Pricing rule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error404"
+
+  /integrations/providers:
+    get:
+      tags: [Integrations]
+      summary: List available third-party providers
+      operationId: integrationsListProviders
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Providers list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: DHL
+                        name:
+                          type: string
+                          example: "DHL (mock)"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /integrations/dhl/quote:
+    post:
+      tags: [Integrations]
+      summary: Get a DHL shipping quote
+      operationId: integrationsDhlQuote
+      description: Returns a mock quote. The call is logged in ThirdPartyIntegrationLog.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [weight, from, to]
+              properties:
+                weight:
+                  type: number
+                  exclusiveMinimum: 0
+                  example: 2.5
+                from:
+                  type: string
+                  minLength: 1
+                  example: ADDIS
+                to:
+                  type: string
+                  minLength: 1
+                  example: ADAMA
+      responses:
+        "200":
+          description: Quote received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      provider:
+                        type: string
+                        example: DHL
+                      currency:
+                        type: string
+                        example: ETB
+                      estimatedDays:
+                        type: integer
+                        example: 2
+                      amount:
+                        type: number
+                        example: 150
+                      meta:
+                        type: object
+                        properties:
+                          weight:
+                            type: number
+                          from:
+                            type: string
+                          to:
+                            type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error422"
+
+  /integrations/dhl/create-shipment:
+    post:
+      tags: [Integrations]
+      summary: Submit a shipment to DHL
+      operationId: integrationsDhlCreateShipment
+      description: Submits an existing shipment to DHL (mock). Logged in ThirdPartyIntegrationLog.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shipmentId]
+              properties:
+                shipmentId:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Shipment submitted to DHL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      provider:
+                        type: string
+                        example: DHL
+                      providerShipmentId:
+                        type: string
+                        example: "dhl-mock-DLV-20260508-A3B5C7"
+                      status:
+                        type: string
+                        example: SUBMITTED
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error422"
+
+  /reports/summary:
+    get:
+      tags: [Reports]
+      summary: Get dashboard summary statistics
+      operationId: reportsSummary
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Summary stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      totalShipments:
+                        type: integer
+                      createdShipments:
+                        type: integer
+                      inTransitShipments:
+                        type: integer
+                      outForDeliveryShipments:
+                        type: integer
+                      deliveredShipments:
+                        type: integer
+                      cancelledShipments:
+                        type: integer
+                      totalRevenuePaid:
+                        type: number
+                      pendingPaymentAmount:
+                        type: number
+                      codCollectedAmount:
+                        type: number
+                      codPendingAmount:
+                        type: number
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /reports/shipments-by-status:
+    get:
+      tags: [Reports]
+      summary: Get shipment counts grouped by status
+      operationId: reportsShipmentsByStatus
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Shipment counts by status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          $ref: "#/components/schemas/ShipmentStatus"
+                        count:
+                          type: integer
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /reports/payments:
+    get:
+      tags: [Reports]
+      summary: Get payment report grouped by status and method
+      operationId: reportsPayments
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Payment report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          $ref: "#/components/schemas/PaymentStatus"
+                        method:
+                          $ref: "#/components/schemas/PaymentMethod"
+                        count:
+                          type: integer
+                        amount:
+                          type: number
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /reports/cod:
+    get:
+      tags: [Reports]
+      summary: Get COD report grouped by collection status
+      operationId: reportsCod
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: COD report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        collected:
+                          type: boolean
+                        count:
+                          type: integer
+                        amount:
+                          type: number
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+  /reports/driver-performance:
+    get:
+      tags: [Reports]
+      summary: Get driver performance report
+      operationId: reportsDriverPerformance
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Driver performance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        driverId:
+                          type: string
+                          format: uuid
+                        driverName:
+                          type: string
+                        assignedShipments:
+                          type: integer
+                        deliveredShipments:
+                          type: integer
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error401"
+        "403":
+          description: Forbidden (requires ADMIN or STAFF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error403"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login or /auth/register
+
+  parameters:
+    page:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number (1-indexed)
+    limit:
+      in: query
+      name: limit
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Items per page
+    userId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: User ID
+    shipmentId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Shipment ID
+    shipmentIdPath:
+      in: path
+      name: shipmentId
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Shipment ID
+    pricingRuleId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Pricing rule ID
+
+  schemas:
+    # ─── Enums ──────────────────────────────────────────────────────
+    UserRole:
+      type: string
+      enum: [ADMIN, STAFF, DRIVER, CUSTOMER]
+
+    UserStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+
+    ShipmentStatus:
+      type: string
+      enum: [CREATED, PICKED_UP, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERED, CANCELLED]
+
+    PaymentMethod:
+      type: string
+      enum: [TELEBIRR, CBE_BIRR, CASH]
+
+    PaymentStatus:
+      type: string
+      enum: [PENDING, PAID, FAILED, CANCELLED]
+
+    PricingType:
+      type: string
+      enum: [FIXED, PER_KG]
+
+    DeliveryProofType:
+      type: string
+      enum: [OTP, PHOTO]
+
+    # ─── User ───────────────────────────────────────────────────────
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        phone:
+          type: string
+        role:
+          $ref: "#/components/schemas/UserRole"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ─── Driver ─────────────────────────────────────────────────────
+    Driver:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        isAvailable:
+          type: boolean
+        currentLat:
+          type: number
+          nullable: true
+        currentLng:
+          type: number
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DriverWithUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        isAvailable:
+          type: boolean
+        currentLat:
+          type: number
+          nullable: true
+        currentLng:
+          type: number
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+              nullable: true
+            phone:
+              type: string
+            role:
+              $ref: "#/components/schemas/UserRole"
+            status:
+              $ref: "#/components/schemas/UserStatus"
+
+    # ─── Shipment ───────────────────────────────────────────────────
+    Shipment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trackingNumber:
+          type: string
+          example: DLV-20260508-A3B5C7
+        senderName:
+          type: string
+        senderPhone:
+          type: string
+        receiverName:
+          type: string
+        receiverPhone:
+          type: string
+        pickupAddress:
+          type: string
+        deliveryAddress:
+          type: string
+        pickupLat:
+          type: number
+          nullable: true
+        pickupLng:
+          type: number
+          nullable: true
+        deliveryLat:
+          type: number
+          nullable: true
+        deliveryLng:
+          type: number
+          nullable: true
+        packageType:
+          type: string
+        weight:
+          type: number
+        price:
+          type: number
+        status:
+          $ref: "#/components/schemas/ShipmentStatus"
+        createdById:
+          type: string
+          format: uuid
+          nullable: true
+        assignedDriverId:
+          type: string
+          format: uuid
+          nullable: true
+        assignedById:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ShipmentCreateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trackingNumber:
+          type: string
+        senderName:
+          type: string
+        senderPhone:
+          type: string
+        receiverName:
+          type: string
+        receiverPhone:
+          type: string
+        pickupAddress:
+          type: string
+        deliveryAddress:
+          type: string
+        packageType:
+          type: string
+        weight:
+          type: number
+        price:
+          type: number
+        status:
+          $ref: "#/components/schemas/ShipmentStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deliveryProof:
+          $ref: "#/components/schemas/DeliveryProof"
+        payment:
+          $ref: "#/components/schemas/Payment"
+        codTransaction:
+          allOf:
+            - $ref: "#/components/schemas/CodTransaction"
+            - nullable: true
+        devOtp:
+          type: string
+          description: Only returned in NODE_ENV=development
+
+    ShipmentListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trackingNumber:
+          type: string
+        status:
+          $ref: "#/components/schemas/ShipmentStatus"
+        senderName:
+          type: string
+        receiverName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ShipmentDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trackingNumber:
+          type: string
+        senderName:
+          type: string
+        senderPhone:
+          type: string
+        receiverName:
+          type: string
+        receiverPhone:
+          type: string
+        pickupAddress:
+          type: string
+        deliveryAddress:
+          type: string
+        pickupLat:
+          type: number
+          nullable: true
+        pickupLng:
+          type: number
+          nullable: true
+        deliveryLat:
+          type: number
+          nullable: true
+        deliveryLng:
+          type: number
+          nullable: true
+        packageType:
+          type: string
+        weight:
+          type: number
+        price:
+          type: number
+        status:
+          $ref: "#/components/schemas/ShipmentStatus"
+        createdById:
+          type: string
+          format: uuid
+          nullable: true
+        assignedDriverId:
+          type: string
+          format: uuid
+          nullable: true
+        assignedById:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShipmentEvent"
+        payment:
+          $ref: "#/components/schemas/Payment"
+        codTransaction:
+          allOf:
+            - $ref: "#/components/schemas/CodTransaction"
+            - nullable: true
+        deliveryProof:
+          $ref: "#/components/schemas/DeliveryProof"
+        assignedDriver:
+          allOf:
+            - $ref: "#/components/schemas/DriverWithUser"
+            - nullable: true
+        createdBy:
+          allOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                  nullable: true
+                phone:
+                  type: string
+                role:
+                  $ref: "#/components/schemas/UserRole"
+            - nullable: true
+
+    # ─── ShipmentEvent ──────────────────────────────────────────────
+    ShipmentEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        shipmentId:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/ShipmentStatus"
+        locationText:
+          type: string
+          nullable: true
+        lat:
+          type: number
+          nullable: true
+        lng:
+          type: number
+          nullable: true
+        actorId:
+          type: string
+          format: uuid
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+
+    # ─── DeliveryProof ──────────────────────────────────────────────
+    DeliveryProof:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/DeliveryProofType"
+        verified:
+          type: boolean
+        verifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        otpExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        photoUrl:
+          type: string
+          format: uri
+          nullable: true
+
+    # ─── Payment ────────────────────────────────────────────────────
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        shipmentId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        method:
+          $ref: "#/components/schemas/PaymentMethod"
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        providerReference:
+          type: string
+          nullable: true
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ─── CodTransaction ─────────────────────────────────────────────
+    CodTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        shipmentId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        collected:
+          type: boolean
+        collectedAt:
+          type: string
+          format: date-time
+          nullable: true
+        collectedByDriverId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ─── PricingRule ────────────────────────────────────────────────
+    PricingRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/PricingType"
+        packageType:
+          type: string
+          nullable: true
+        fixedPrice:
+          type: number
+          nullable: true
+        pricePerKg:
+          type: number
+          nullable: true
+        minWeight:
+          type: number
+          nullable: true
+        maxWeight:
+          type: number
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ─── Tracking ───────────────────────────────────────────────────
+    TrackingInfo:
+      type: object
+      properties:
+        trackingNumber:
+          type: string
+        status:
+          $ref: "#/components/schemas/ShipmentStatus"
+        senderName:
+          type: string
+        senderPhone:
+          type: string
+        receiverName:
+          type: string
+        receiverPhone:
+          type: string
+        pickupAddress:
+          type: string
+        deliveryAddress:
+          type: string
+        packageType:
+          type: string
+        weight:
+          type: number
+        latestEvent:
+          allOf:
+            - $ref: "#/components/schemas/ShipmentEvent"
+            - nullable: true
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShipmentEvent"
+
+    # ─── Auth Response ──────────────────────────────────────────────
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: JWT bearer token
+            user:
+              $ref: "#/components/schemas/User"
+
+    # ─── Error Responses ────────────────────────────────────────────
+    Error400:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        statusCode:
+          type: integer
+          example: 400
+        details:
+          type: string
+          nullable: true
+
+    Error401:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Unauthorized
+        statusCode:
+          type: integer
+          example: 401
+        details:
+          type: string
+          nullable: true
+
+    Error403:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Forbidden
+        statusCode:
+          type: integer
+          example: 403
+        details:
+          type: string
+          nullable: true
+
+    Error404:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Not found
+        statusCode:
+          type: integer
+          example: 404
+        details:
+          type: string
+          nullable: true
+
+    Error409:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        statusCode:
+          type: integer
+          example: 409
+        details:
+          type: string
+          nullable: true
+
+    Error422:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation Error
+        statusCode:
+          type: integer
+          example: 422
+        details:
+          type: object
+          description: Zod flatten() output with field-level errors
+          nullable: true
+
+    Error500:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        statusCode:
+          type: integer
+          example: 500
+        details:
+          type: string
+          nullable: true
+
+tags:
+  - name: Health
+    description: Server health check
+  - name: Auth
+    description: Authentication and user registration
+  - name: Users
+    description: User management (ADMIN only)
+  - name: Drivers
+    description: Driver management (ADMIN, STAFF)
+  - name: Driver Self
+    description: Driver self-service endpoints (DRIVER only)
+  - name: Shipments
+    description: Shipment CRUD and management
+  - name: Tracking
+    description: Public shipment tracking (no auth required)
+  - name: Payments
+    description: Payment management
+  - name: COD
+    description: Cash on delivery management
+  - name: Pricing
+    description: Pricing rule management (ADMIN only)
+  - name: Integrations
+    description: Third-party provider integrations (ADMIN, STAFF)
+  - name: Reports
+    description: Dashboard reports and analytics (ADMIN, STAFF)
