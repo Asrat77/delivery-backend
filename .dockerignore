@@ -3,7 +3,6 @@ node_modules
 .gitignore
 .env
 .env.example
-docs
 README.md
 *.spec.ts
 src/test
