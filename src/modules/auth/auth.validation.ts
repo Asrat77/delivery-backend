@@ -9,6 +9,13 @@ export const registerSchema = {
   }),
 };
 
+export const verifyRegistrationSchema = {
+  body: z.object({
+    phone: z.string().min(6),
+    otp: z.string().length(6),
+  }),
+};
+
 export const loginSchema = {
   body: z.object({
     emailOrPhone: z.string().min(3),
@@ -16,3 +23,9 @@ export const loginSchema = {
   }),
 };
 
+export const verifyLoginSchema = {
+  body: z.object({
+    phone: z.string().min(6),
+    otp: z.string().length(6),
+  }),
+};

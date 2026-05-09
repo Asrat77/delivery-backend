@@ -42,14 +42,14 @@ describe("COD", () => {
       .send({ name: "Other Driver", email, phone, password: "Password123!", role: "DRIVER" });
     expect(createdDriver.status).toBe(201);
 
-    const otherLogin = await request(app).post("/auth/login").send({ emailOrPhone: email, password: "Password123!" });
-    const otherToken = otherLogin.body.data.token as string;
+    await request(app).post("/auth/login").send({ emailOrPhone: email, password: "Password123!" }).expect(200);
+    const verifyRes = await request(app).post("/auth/verify-login").send({ phone, otp: "123456" }).expect(200);
+    const otherToken = verifyRes.body.data.token as string;
 
     const { token: staffToken } = await loginAsStaff();
     const created = await createTestShipment(staffToken, { codAmount: 90 });
     const shipmentId = created.body.data.id as string;
 
-    // Do NOT assign to other driver
     const res = await request(app).patch(`/cod/${shipmentId}/mark-collected`).set("Authorization", `Bearer ${otherToken}`).send({});
     expect(res.status).toBe(403);
   });

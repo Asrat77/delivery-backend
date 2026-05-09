@@ -3,6 +3,8 @@ import bcrypt from "bcrypt";
 import { prisma } from "../config/prisma";
 import { afterAll, beforeAll } from "@jest/globals";
 
+// Imported only for type reference; seed helper below covers the actual data.
+
 dotenv.config();
 
 // Prisma Client reads DATABASE_URL from process.env at import time in many setups.
@@ -69,6 +71,32 @@ async function seedBaseUsers() {
     where: { userId: driverUser.id },
     update: { isAvailable: true },
     create: { userId: driverUser.id, isAvailable: true },
+  });
+
+  await prisma.pricingRule.upsert({
+    where: { id: "seed-fixed" },
+    update: { isActive: true },
+    create: {
+      id: "seed-fixed",
+      name: "Fixed Small Package",
+      type: "FIXED",
+      packageType: "SMALL",
+      fixedPrice: 150,
+      isActive: true,
+    },
+  });
+
+  await prisma.pricingRule.upsert({
+    where: { id: "seed-perkg" },
+    update: { isActive: true },
+    create: {
+      id: "seed-perkg",
+      name: "Per KG Standard",
+      type: "PER_KG",
+      pricePerKg: 40,
+      minWeight: 0.1,
+      isActive: true,
+    },
   });
 }
 

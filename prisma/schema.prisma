@@ -80,6 +80,22 @@ enum ThirdPartyIntegrationStatus {
   FAILED
 }
 
+model OtpVerification {
+  id        String   @id @default(uuid())
+  phone     String
+  otpHash   String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  verifiedAt DateTime?
+  purpose   String
+  metadata  Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([phone, purpose])
+  @@index([expiresAt])
+}
+
 model User {
   id           String     @id @default(uuid())
   name         String
