@@ -1,6 +1,5 @@
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import swaggerUi from "swagger-ui-express";
-import swaggerUiDist from "swagger-ui-dist";
 import yaml from "js-yaml";
 import fs from "fs";
 import path from "path";
@@ -24,11 +23,16 @@ router.get("/json", (_req, res) => {
   res.json(swaggerDocument);
 });
 
-router.use("/", swaggerUiDist.serve);
-router.get("/", swaggerUiDist.setup(swaggerDocument, {
-  swaggerUrl: "/docs/json",
-  explorer: true,
-  customSiteTitle: "Delivery Backend API Docs",
-}));
+if (swaggerDocument) {
+  router.use("/", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+    explorer: true,
+    customSiteTitle: "Delivery Backend API Docs",
+  }));
+} else {
+  const fallback: RequestHandler[] = [(_req, res) => {
+    res.status(503).json({ success: false, message: "Swagger UI unavailable — spec not loaded" });
+  }];
+  router.use("/", ...fallback);
+}
 
 export default router;
