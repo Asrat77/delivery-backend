@@ -20,12 +20,27 @@ describe("AUTH — Registration OTP Flow", () => {
     await cleanupPhones([PHONE_A, PHONE_B, PHONE_C, PHONE_D, PHONE_E]);
   });
 
+  it("POST /auth/register should reject duplicate with existing user", async () => {
+    const res = await request(app)
+      .post("/auth/register")
+      .send({ name: "Test User", phone: PHONE_A, password: "Password123!" });
+    expect(res.status).toBe(200);
+    expect(res.body.data.phone).toBe(PHONE_A);
+  });
+
   it("POST /auth/register should send OTP for new phone", async () => {
     const res = await request(app)
       .post("/auth/register")
       .send({ name: "Test User", phone: PHONE_A, password: "Password123!" });
     expect(res.status).toBe(200);
     expect(res.body.data.phone).toBe(PHONE_A);
+  });
+
+  it("POST /auth/register should send OTP without password", async () => {
+    const res = await request(app)
+      .post("/auth/register")
+      .send({ name: "No Password User", phone: PHONE_A });
+    expect(res.status).toBe(200);
   });
 
   it("POST /auth/register should allow re-sending OTP for same phone", async () => {
@@ -52,15 +67,31 @@ describe("AUTH — Registration OTP Flow", () => {
     expect(res.body.data.user.role).toBe("CUSTOMER");
   });
 
-  it("POST /auth/verify-registration should reject invalid OTP", async () => {
+  it("POST /auth/verify-registration should create user without password", async () => {
     await request(app)
       .post("/auth/register")
-      .send({ name: "Bad OTP User", phone: PHONE_C, password: "Password123!" })
+      .send({ name: "Passwordless User", phone: PHONE_C })
       .expect(200);
 
     const res = await request(app)
       .post("/auth/verify-registration")
-      .send({ phone: PHONE_C, otp: "99999" })
+      .send({ phone: PHONE_C, otp: "12345" })
+      .expect(201);
+
+    expect(res.body.data.token).toBeTruthy();
+    expect(res.body.data.user.phone).toBe(PHONE_C);
+    expect(res.body.data.user.name).toBe("Passwordless User");
+  });
+
+  it("POST /auth/verify-registration should reject invalid OTP", async () => {
+    await request(app)
+      .post("/auth/register")
+      .send({ name: "Bad OTP User", phone: PHONE_D, password: "Password123!" })
+      .expect(200);
+
+    const res = await request(app)
+      .post("/auth/verify-registration")
+      .send({ phone: PHONE_D, otp: "99999" })
       .expect(400);
 
     expect(res.body.message).toBe("Invalid OTP");

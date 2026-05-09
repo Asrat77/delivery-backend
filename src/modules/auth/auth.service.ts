@@ -29,16 +29,20 @@ function signToken(user: { id: string; role: string }): string {
 }
 
 async function sendOtpSms(phone: string, otp: string): Promise<void> {
-  const env = getEnv();
   const provider = new MockSmsProvider();
   await provider.send({ to: phone, message: `Your verification code is: ${otp}` });
+}
+
+async function generatePasswordHash(password: string | undefined, env: ReturnType<typeof getEnv>): Promise<string> {
+  if (password) return bcrypt.hash(password, env.BCRYPT_SALT_ROUNDS);
+  return bcrypt.hash(String(Math.random()), env.BCRYPT_SALT_ROUNDS);
 }
 
 export async function sendRegistrationOtp(input: {
   name: string;
   email?: string;
   phone: string;
-  password: string;
+  password?: string;
 }) {
   const env = getEnv();
 
@@ -53,7 +57,8 @@ export async function sendRegistrationOtp(input: {
     if (input.email && existing.email === input.email) throw new ApiError(409, "Email already registered");
   }
 
-  const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_SALT_ROUNDS);
+  const passwordHash = await generatePasswordHash(input.password, env);
+
   const otp = generateOtp();
   const otpHash = await hashOtp(otp);
   const expiresAt = otpExpiresAt(10);
