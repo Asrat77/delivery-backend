@@ -6,17 +6,32 @@ import path from "path";
 
 const router = Router();
 
-const swaggerDocument = yaml.load(
-  fs.readFileSync(path.join(__dirname, "../../../docs/swagger.yml"), "utf8")
-) as Record<string, unknown>;
+let swaggerDocument: Record<string, unknown> | null = null;
+
+try {
+  swaggerDocument = yaml.load(
+    fs.readFileSync(path.join(__dirname, "../../../docs/swagger.yml"), "utf8")
+  ) as Record<string, unknown>;
+} catch {
+  console.warn("⚠️  Failed to load docs/swagger.yml — Swagger UI unavailable");
+}
 
 router.get("/json", (_req, res) => {
+  if (!swaggerDocument) {
+    return res.status(503).json({ success: false, message: "Swagger spec not loaded" });
+  }
   res.json(swaggerDocument);
 });
 
-router.use("/", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
-  explorer: true,
-  customSiteTitle: "Delivery Backend API Docs",
-}));
+if (swaggerDocument) {
+  router.use("/", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+    explorer: true,
+    customSiteTitle: "Delivery Backend API Docs",
+  }));
+} else {
+  router.use("/", (_req, res) => {
+    res.status(503).json({ success: false, message: "Swagger UI unavailable — spec not loaded" });
+  });
+}
 
 export default router;
