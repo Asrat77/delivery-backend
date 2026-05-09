@@ -123,7 +123,7 @@ export async function verifyRegistrationOtp(input: { phone: string; otp: string 
   }
 }
 
-export async function sendLoginOtp(input: { emailOrPhone: string; password: string }) {
+export async function sendLoginOtp(input: { emailOrPhone: string; password?: string }) {
   const user = await prisma.user.findFirst({
     where: {
       OR: [{ email: input.emailOrPhone }, { phone: input.emailOrPhone }],
@@ -134,8 +134,10 @@ export async function sendLoginOtp(input: { emailOrPhone: string; password: stri
   if (!user) throw new ApiError(401, "Invalid credentials");
   if (user.status !== "ACTIVE") throw new ApiError(403, "User is inactive");
 
-  const ok = await bcrypt.compare(input.password, user.passwordHash);
-  if (!ok) throw new ApiError(401, "Invalid credentials");
+  if (input.password !== undefined) {
+    const ok = await bcrypt.compare(input.password, user.passwordHash);
+    if (!ok) throw new ApiError(401, "Invalid credentials");
+  }
 
   const otp = generateOtp();
   const otpHash = await hashOtp(otp);

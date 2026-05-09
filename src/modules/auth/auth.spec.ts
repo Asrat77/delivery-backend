@@ -123,6 +123,21 @@ describe("AUTH — Login OTP Flow", () => {
     expect(res.status).toBe(401);
   });
 
+  it("POST /auth/login should send OTP without password", async () => {
+    const res = await request(app)
+      .post("/auth/login")
+      .send({ emailOrPhone: "admin@example.com" });
+    expect(res.status).toBe(200);
+    expect(res.body.data.phone).toBe("+251900000001");
+  });
+
+  it("POST /auth/login should reject non-existent user without password", async () => {
+    const res = await request(app)
+      .post("/auth/login")
+      .send({ emailOrPhone: "nobody@example.com" });
+    expect(res.status).toBe(401);
+  });
+
   it("POST /auth/verify-login should return token with mock OTP", async () => {
     await request(app)
       .post("/auth/login")
