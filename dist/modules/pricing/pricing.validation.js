@@ -10,11 +10,15 @@ exports.createPricingSchema = {
     body: zod_1.z.object({
         name: zod_1.z.string().min(1),
         type: zod_1.z.enum(["FIXED", "PER_KG"]),
+        deliveryType: zod_1.z.enum(["BICYCLE", "MOTORBIKE"]),
+        baseFare: zod_1.z.coerce.number().positive().optional(),
+        ratePerKm: zod_1.z.coerce.number().positive().optional(),
         packageType: zod_1.z.string().min(1).optional(),
         fixedPrice: zod_1.z.coerce.number().positive().optional(),
         pricePerKg: zod_1.z.coerce.number().positive().optional(),
         minWeight: zod_1.z.coerce.number().positive().optional(),
         maxWeight: zod_1.z.coerce.number().positive().optional(),
+        isActive: zod_1.z.boolean().default(true),
     }),
 };
 exports.listPricingSchema = {
