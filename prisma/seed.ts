@@ -93,6 +93,20 @@ async function main() {
     },
   });
 
+  await prisma.pricingRule.upsert({
+    where: { id: "seed-foot" },
+    update: { isActive: true },
+    create: {
+      id: "seed-foot",
+      name: "City Foot Delivery",
+      type: "PER_KG",
+      deliveryType: "FOOT",
+      baseFare: 20,
+      ratePerKm: 5,
+      isActive: true,
+    },
+  });
+
   // eslint-disable-next-line no-console
   console.log("Seed complete", { adminId: admin.id });
 }

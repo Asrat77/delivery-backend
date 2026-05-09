@@ -21,7 +21,7 @@ function haversineDistance(
 }
 
 export async function calculatePrice(input: {
-  deliveryType: "BICYCLE" | "MOTORBIKE";
+  deliveryType: "BICYCLE" | "MOTORBIKE" | "FOOT";
   pickupLat: number;
   pickupLng: number;
   deliveryLat: number;
