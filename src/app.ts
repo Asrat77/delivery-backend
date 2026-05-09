@@ -17,6 +17,7 @@ import codRoutes from "./modules/cod/cod.routes";
 import pricingRoutes from "./modules/pricing/pricing.routes";
 import integrationsRoutes from "./modules/integrations/integrations.routes";
 import reportsRoutes from "./modules/reports/reports.routes";
+import docsRoutes from "./modules/docs/docs.routes";
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/cod", codRoutes);
 app.use("/pricing", pricingRoutes);
 app.use("/integrations", integrationsRoutes);
 app.use("/reports", reportsRoutes);
+app.use("/docs", docsRoutes);
 
 app.use((_req, res) => {
   return res.status(404).json(errorResponse("Route not found", 404, null));
