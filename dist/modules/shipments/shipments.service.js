@@ -192,9 +192,12 @@ async function getShipmentById(input) {
     return safe;
 }
 async function assignDriver(input) {
-    const driver = await prisma_1.prisma.driver.findUnique({ where: { id: input.driverId }, include: { user: true } });
-    if (!driver)
-        throw new ApiError_1.ApiError(404, "Driver not found");
+    let driver = await prisma_1.prisma.driver.findUnique({ where: { id: input.driverId }, include: { user: true } });
+    if (!driver) {
+        driver = await prisma_1.prisma.driver.findUnique({ where: { userId: input.driverId }, include: { user: true } });
+        if (!driver)
+            throw new ApiError_1.ApiError(404, "Driver not found");
+    }
     if (driver.user.role !== "DRIVER")
         throw new ApiError_1.ApiError(400, "User is not a DRIVER");
     const shipment = await prisma_1.prisma.shipment.findUnique({ where: { id: input.shipmentId } });

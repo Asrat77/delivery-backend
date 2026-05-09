@@ -217,8 +217,11 @@ export async function getShipmentById(input: { shipmentId: string; userId: strin
 }
 
 export async function assignDriver(input: { shipmentId: string; driverId: string; assignedById: string }) {
-  const driver = await prisma.driver.findUnique({ where: { id: input.driverId }, include: { user: true } });
-  if (!driver) throw new ApiError(404, "Driver not found");
+  let driver = await prisma.driver.findUnique({ where: { id: input.driverId }, include: { user: true } });
+  if (!driver) {
+    driver = await prisma.driver.findUnique({ where: { userId: input.driverId }, include: { user: true } });
+    if (!driver) throw new ApiError(404, "Driver not found");
+  }
   if (driver.user.role !== "DRIVER") throw new ApiError(400, "User is not a DRIVER");
 
   const shipment = await prisma.shipment.findUnique({ where: { id: input.shipmentId } });
