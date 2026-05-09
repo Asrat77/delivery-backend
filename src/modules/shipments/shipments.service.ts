@@ -134,6 +134,7 @@ export async function createShipment(input: {
 
 export async function listShipments(input: {
   userId: string;
+  userPhone?: string;
   role: string;
   query: any;
 }) {
@@ -153,7 +154,10 @@ export async function listShipments(input: {
   }
 
   if (input.role === "CUSTOMER") {
-    where.createdById = input.userId;
+    where.OR = [
+      { createdById: input.userId },
+      ...(input.userPhone ? [{ receiverPhone: input.userPhone }] : []),
+    ];
   } else if (input.role === "DRIVER") {
     throw new ApiError(403, "Drivers must use /driver/shipments");
   }
@@ -172,7 +176,7 @@ export async function listShipments(input: {
   return { items, page, limit, total };
 }
 
-export async function getShipmentById(input: { shipmentId: string; userId: string; role: string }) {
+export async function getShipmentById(input: { shipmentId: string; userId: string; userPhone?: string; role: string }) {
   const shipment = await prisma.shipment.findUnique({
     where: { id: input.shipmentId },
     include: {
@@ -186,7 +190,11 @@ export async function getShipmentById(input: { shipmentId: string; userId: strin
   });
   if (!shipment) throw new ApiError(404, "Shipment not found");
 
-  if (input.role === "CUSTOMER" && shipment.createdById !== input.userId) throw new ApiError(403, "Forbidden");
+  if (input.role === "CUSTOMER") {
+    const isCreator = shipment.createdById === input.userId;
+    const isReceiver = input.userPhone ? shipment.receiverPhone === input.userPhone : false;
+    if (!isCreator && !isReceiver) throw new ApiError(403, "Forbidden");
+  }
   if (input.role === "DRIVER") {
     const driver = await prisma.driver.findUnique({ where: { userId: input.userId } });
     if (!driver || shipment.assignedDriverId !== driver.id) throw new ApiError(403, "Forbidden");

@@ -13,7 +13,7 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
-  const data = await shipmentsService.listShipments({ userId: req.user!.id, role: req.user!.role, query: req.query });
+  const data = await shipmentsService.listShipments({ userId: req.user!.id, userPhone: req.user!.phone, role: req.user!.role, query: req.query });
   return res.status(200).json(successResponse("Shipments", data));
 });
 
@@ -21,6 +21,7 @@ export const getById = asyncHandler(async (req: Request, res: Response) => {
   const shipment = await shipmentsService.getShipmentById({
     shipmentId: String(req.params.id),
     userId: req.user!.id,
+    userPhone: req.user!.phone,
     role: req.user!.role,
   });
   return res.status(200).json(successResponse("Shipment", shipment));

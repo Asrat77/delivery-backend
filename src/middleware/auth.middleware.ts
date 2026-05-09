@@ -7,6 +7,7 @@ import { ApiError } from "../utils/ApiError";
 export type AuthUser = {
   id: string;
   role: string;
+  phone?: string;
 };
 
 declare global {
@@ -38,11 +39,11 @@ export async function authMiddleware(req: Request, _res: Response, next: NextFun
     const userId = payload.sub ?? payload.userId;
     if (!userId || !payload.role) return next(new ApiError(401, "Unauthorized"));
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, status: true } });
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, status: true, phone: true } });
     if (!user) return next(new ApiError(401, "Unauthorized"));
     if (user.status !== "ACTIVE") return next(new ApiError(403, "User is inactive"));
 
-    req.user = { id: user.id, role: user.role };
+    req.user = { id: user.id, role: user.role, phone: user.phone };
     return next();
   } catch {
     return next(new ApiError(401, "Unauthorized"));

@@ -82,6 +82,8 @@ async function seedBaseUsers() {
       type: "FIXED",
       packageType: "SMALL",
       fixedPrice: 150,
+      baseFare: 30,
+      ratePerKm: 10,
       isActive: true,
     },
   });
@@ -94,6 +96,8 @@ async function seedBaseUsers() {
       name: "Per KG Standard",
       type: "PER_KG",
       pricePerKg: 40,
+      baseFare: 30,
+      ratePerKm: 10,
       minWeight: 0.1,
       isActive: true,
     },
