@@ -71,6 +71,7 @@ enum PricingType {
 enum DeliveryType {
   BICYCLE
   MOTORBIKE
+  FOOT
 }
 
 enum ServiceType {

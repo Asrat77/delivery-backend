@@ -24,7 +24,7 @@ exports.createShipmentSchema = {
         weight: zod_1.z.coerce.number().positive(),
         price: zod_1.z.coerce.number().positive().optional(),
         serviceType: zod_1.z.enum(["DOMESTIC", "INTERNATIONAL"]).default("DOMESTIC"),
-        deliveryType: zod_1.z.enum(["BICYCLE", "MOTORBIKE"]),
+        deliveryType: zod_1.z.enum(["BICYCLE", "MOTORBIKE", "FOOT"]),
         paymentMethod: zod_1.z.enum(["TELEBIRR", "CBE_BIRR", "CASH"]).default("CASH"),
         codAmount: zod_1.z.coerce.number().positive().optional(),
     }),
