@@ -45,16 +45,32 @@ async function deletePricingRule(id) {
 }
 async function calculatePrice(input) {
     const rules = await prisma_1.prisma.pricingRule.findMany({ where: { isActive: true } });
-    const matching = rules.filter((r) => !r.packageType || r.packageType === input.packageType);
+    const matching = rules.filter((r) => {
+        if (!r.packageType || r.packageType === input.packageType)
+            return true;
+        if (!r.deliveryType || r.deliveryType === input.deliveryType)
+            return true;
+        return false;
+    });
+    let basePrice = 0;
     for (const rule of matching) {
         const minOk = rule.minWeight === null || input.weight >= Number(rule.minWeight);
         const maxOk = rule.maxWeight === null || input.weight <= Number(rule.maxWeight);
         if (!minOk || !maxOk)
             continue;
-        if (rule.type === "FIXED" && rule.fixedPrice !== null)
-            return Number(rule.fixedPrice);
-        if (rule.type === "PER_KG" && rule.pricePerKg !== null)
-            return Number(rule.pricePerKg) * input.weight;
+        if (rule.type === "FIXED" && rule.fixedPrice !== null) {
+            basePrice = Number(rule.fixedPrice);
+            break;
+        }
+        if (rule.type === "PER_KG" && rule.pricePerKg !== null) {
+            basePrice = Number(rule.pricePerKg) * input.weight;
+        }
     }
-    throw new ApiError_1.ApiError(422, "No active pricing rule matched and no explicit price provided");
+    if (basePrice === 0) {
+        throw new ApiError_1.ApiError(422, "No active pricing rule matched and no explicit price provided");
+    }
+    if (input.serviceType === "INTERNATIONAL") {
+        return Math.round(basePrice * 1.5 * 100) / 100;
+    }
+    return basePrice;
 }

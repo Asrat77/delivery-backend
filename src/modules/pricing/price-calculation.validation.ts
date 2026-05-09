@@ -7,5 +7,6 @@ export const calculatePriceSchema = {
     pickupLng: z.coerce.number().min(-180).max(180),
     deliveryLat: z.coerce.number().min(-90).max(90),
     deliveryLng: z.coerce.number().min(-180).max(180),
+    serviceType: z.enum(["DOMESTIC", "INTERNATIONAL"]).default("DOMESTIC"),
   }),
 };

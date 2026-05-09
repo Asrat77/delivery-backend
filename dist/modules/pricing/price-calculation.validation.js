@@ -9,5 +9,6 @@ exports.calculatePriceSchema = {
         pickupLng: zod_1.z.coerce.number().min(-180).max(180),
         deliveryLat: zod_1.z.coerce.number().min(-90).max(90),
         deliveryLng: zod_1.z.coerce.number().min(-180).max(180),
+        serviceType: zod_1.z.enum(["DOMESTIC", "INTERNATIONAL"]).default("DOMESTIC"),
     }),
 };

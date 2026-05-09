@@ -28,16 +28,21 @@ async function calculatePrice(input) {
     }
     const baseFare = Number(rule.baseFare);
     const ratePerKm = Number(rule.ratePerKm);
-    const distanceCharge = distance * ratePerKm;
-    const price = Math.max(baseFare, distanceCharge);
+    let distanceCharge = distance * ratePerKm;
+    let price = Math.max(baseFare, distanceCharge);
+    if (input.serviceType === "INTERNATIONAL") {
+        price = Math.round(price * 1.5 * 100) / 100;
+    }
     return {
         price,
         distance,
         deliveryType: input.deliveryType,
+        serviceType: input.serviceType ?? "DOMESTIC",
         breakdown: {
             baseFare,
             distanceCharge: Number(distanceCharge.toFixed(2)),
             ratePerKm,
+            ...(input.serviceType === "INTERNATIONAL" ? { internationalMultiplier: 1.5 } : {}),
         },
     };
 }

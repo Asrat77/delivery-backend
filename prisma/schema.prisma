@@ -73,6 +73,11 @@ enum DeliveryType {
   MOTORBIKE
 }
 
+enum ServiceType {
+  DOMESTIC
+  INTERNATIONAL
+}
+
 enum ThirdPartyProvider {
   DHL
   MOCK
@@ -165,7 +170,8 @@ model Shipment {
   packageType String
   weight      Decimal @db.Decimal(10, 2)
   price       Decimal @db.Decimal(10, 2)
-  deliveryType DeliveryType?
+  serviceType ServiceType @default(DOMESTIC)
+  deliveryType DeliveryType
 
   status ShipmentStatus @default(CREATED)
 
@@ -194,6 +200,7 @@ model Shipment {
   @@index([createdAt])
   @@index([receiverPhone])
   @@index([senderPhone])
+  @@index([serviceType])
 }
 
 model ShipmentEvent {

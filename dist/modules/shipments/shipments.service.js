@@ -37,6 +37,8 @@ async function createShipment(input) {
         (await (0, pricing_service_1.calculatePrice)({
             packageType: input.data.packageType,
             weight,
+            serviceType: input.data.serviceType,
+            deliveryType: input.data.deliveryType,
         }));
     const otp = (0, otp_1.generateOtp)();
     const otpHash = await (0, otp_1.hashOtp)(otp);
@@ -58,6 +60,7 @@ async function createShipment(input) {
                 packageType: input.data.packageType,
                 weight,
                 price: computedPrice,
+                serviceType: input.data.serviceType,
                 deliveryType: input.data.deliveryType,
                 createdById: input.actorRole === "DRIVER" ? null : input.actorUserId,
                 events: { create: { status: "CREATED", actorId: input.actorUserId } },
