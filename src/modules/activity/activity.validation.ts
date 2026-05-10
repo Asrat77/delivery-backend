@@ -3,7 +3,7 @@ import { paginationQuerySchema } from "../../utils/pagination";
 
 export const listActivitySchema = {
   query: paginationQuerySchema.extend({
-    serviceType: z.enum(["DOMESTIC", "INTERNATIONAL"]).optional(),
+    serviceType: z.enum(["CITY", "DOMESTIC", "INTERNATIONAL"]).optional(),
   }),
 };
 

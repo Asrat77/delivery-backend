@@ -5,7 +5,7 @@ const zod_1 = require("zod");
 const pagination_1 = require("../../utils/pagination");
 exports.listActivitySchema = {
     query: pagination_1.paginationQuerySchema.extend({
-        serviceType: zod_1.z.enum(["DOMESTIC", "INTERNATIONAL"]).optional(),
+        serviceType: zod_1.z.enum(["CITY", "DOMESTIC", "INTERNATIONAL"]).optional(),
     }),
 };
 exports.activityIdParamsSchema = {
