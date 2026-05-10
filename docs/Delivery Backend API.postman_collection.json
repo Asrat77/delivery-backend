@@ -6604,6 +6604,195 @@
       ]
     },
     {
+      "name": "activity",
+      "item": [
+        {
+          "name": "Get Activity List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Success\", function() { pm.expect(pm.response.code).to.be.oneOf([200, 401]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "path": [
+                "activity"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "serviceType",
+                  "value": "DOMESTIC",
+                  "disabled": true,
+                  "description": {
+                    "content": "Filter: DOMESTIC | INTERNATIONAL (omit for all)",
+                    "type": "text/plain"
+                  }
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Activity List",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Activity\",\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"<uuid>\",\n        \"trackingNumber\": \"<string>\",\n        \"pickupAddress\": \"<string>\",\n        \"deliveryAddress\": \"<string>\",\n        \"serviceLabel\": \"City Express\",\n        \"status\": \"DELIVERED\",\n        \"price\": \"<string>\",\n        \"priceCurrency\": \"ETB\",\n        \"formattedDate\": \"Jan 13\",\n        \"createdAt\": \"<dateTime>\",\n        \"assignedDriver\": {\n          \"id\": \"<uuid>\",\n          \"name\": \"<string>\"\n        }\n      }\n    ],\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": \"<integer>\"\n  }\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Unauthorized\",\n  \"statusCode\": 401,\n  \"details\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Get Activity Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Success\", function() { pm.expect(pm.response.code).to.be.oneOf([200, 401, 404]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "path": [
+                "activity",
+                ":id"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "type": "any",
+                  "value": "<uuid>",
+                  "key": "id",
+                  "disabled": false,
+                  "description": {
+                    "content": "(Required) Shipment ID",
+                    "type": "text/plain"
+                  }
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Activity Detail",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Activity detail\",\n  \"data\": {\n    \"id\": \"<uuid>\",\n    \"trackingNumber\": \"<string>\",\n    \"orderId\": \"<uuid>\",\n    \"serviceLabel\": \"International Express\",\n    \"status\": \"OUT_FOR_DELIVERY\",\n    \"date\": \"<dateTime>\",\n    \"pickupAddress\": \"<string>\",\n    \"deliveryAddress\": \"<string>\",\n    \"amount\": \"<string>\",\n    \"paymentMethod\": \"CASH\",\n    \"deliveryType\": \"MOTORBIKE\",\n    \"driver\": {\n      \"id\": \"<uuid>\",\n      \"name\": \"<string>\",\n      \"phone\": \"<string>\"\n    },\n    \"qrCode\": \"data:image/png;base64,...\",\n    \"events\": [\n      {\n        \"id\": \"<uuid>\",\n        \"status\": \"CREATED\",\n        \"locationText\": \"<string>\",\n        \"lat\": \"<number>\",\n        \"lng\": \"<number>\",\n        \"actorId\": \"<uuid>\",\n        \"timestamp\": \"<dateTime>\"\n      }\n    ]\n  }\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "Forbidden",
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Forbidden\",\n  \"statusCode\": 403,\n  \"details\": null\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "track",
       "description": "",
       "item": [
