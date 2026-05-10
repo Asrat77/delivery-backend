@@ -20,6 +20,7 @@ const envSchema = z.object({
 
   APP_PUBLIC_URL: z.string().default("http://localhost:4000"),
   SMS_PROVIDER: z.string().default("mock"),
+  OSRM_BASE_URL: z.string().default("https://router.project-osrm.org"),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -17,6 +17,7 @@ const envSchema = zod_1.z.object({
     REDIS_PORT: zod_1.z.coerce.number().default(6379),
     APP_PUBLIC_URL: zod_1.z.string().default("http://localhost:4000"),
     SMS_PROVIDER: zod_1.z.string().default("mock"),
+    OSRM_BASE_URL: zod_1.z.string().default("https://router.project-osrm.org"),
 });
 function getEnv() {
     const parsed = envSchema.safeParse(process.env);

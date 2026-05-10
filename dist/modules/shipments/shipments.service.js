@@ -20,6 +20,7 @@ const otp_1 = require("../../utils/otp");
 const shipment_status_1 = require("./shipment-status");
 const pricing_service_1 = require("../pricing/pricing.service");
 const notifications_service_1 = require("../notifications/notifications.service");
+const routing_service_1 = require("../routing/routing.service");
 async function generateUniqueTrackingNumber() {
     for (let i = 0; i < 10; i++) {
         const tn = (0, generateTrackingNumber_1.generateTrackingNumber)();
@@ -32,6 +33,13 @@ async function generateUniqueTrackingNumber() {
 async function createShipment(input) {
     const env = (0, env_1.getEnv)();
     const trackingNumber = await generateUniqueTrackingNumber();
+    const route = await (0, routing_service_1.getRouteDistance)({
+        pickupLat: input.data.pickupLat,
+        pickupLng: input.data.pickupLng,
+        deliveryLat: input.data.deliveryLat,
+        deliveryLng: input.data.deliveryLng,
+        deliveryType: input.data.deliveryType,
+    });
     const weight = input.data.weight;
     const computedPrice = input.data.price ??
         (await (0, pricing_service_1.calculatePrice)({
@@ -62,6 +70,8 @@ async function createShipment(input) {
                 price: computedPrice,
                 serviceType: input.data.serviceType,
                 deliveryType: input.data.deliveryType,
+                distanceMeters: route.distanceMeters,
+                durationSeconds: route.durationSeconds,
                 createdById: input.actorRole === "DRIVER" ? null : input.actorUserId,
                 events: { create: { status: "CREATED", actorId: input.actorUserId } },
                 deliveryProof: {

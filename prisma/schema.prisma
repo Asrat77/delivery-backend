@@ -163,16 +163,18 @@ model Shipment {
   pickupAddress   String
   deliveryAddress String
 
-  pickupLat   Decimal? @db.Decimal(10, 7)
-  pickupLng   Decimal? @db.Decimal(10, 7)
-  deliveryLat Decimal? @db.Decimal(10, 7)
-  deliveryLng Decimal? @db.Decimal(10, 7)
+  pickupLat   Decimal @db.Decimal(10, 7)
+  pickupLng   Decimal @db.Decimal(10, 7)
+  deliveryLat Decimal @db.Decimal(10, 7)
+  deliveryLng Decimal @db.Decimal(10, 7)
 
   packageType String
   weight      Decimal @db.Decimal(10, 2)
   price       Decimal @db.Decimal(10, 2)
   serviceType ServiceType @default(DOMESTIC)
   deliveryType DeliveryType
+  distanceMeters    Int?
+  durationSeconds   Int?
 
   status ShipmentStatus @default(CREATED)
 

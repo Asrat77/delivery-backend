@@ -9,6 +9,7 @@ import { generateOtp, hashOtp, otpExpiresAt, verifyOtp } from "../../utils/otp";
 import { assertValidTransition } from "./shipment-status";
 import { calculatePrice } from "../pricing/pricing.service";
 import { createAndDispatchNotification } from "../notifications/notifications.service";
+import { getRouteDistance } from "../routing/routing.service";
 
 async function generateUniqueTrackingNumber() {
   for (let i = 0; i < 10; i++) {
@@ -29,10 +30,10 @@ export async function createShipment(input: {
     receiverPhone: string;
     pickupAddress: string;
     deliveryAddress: string;
-    pickupLat?: number;
-    pickupLng?: number;
-    deliveryLat?: number;
-    deliveryLng?: number;
+    pickupLat: number;
+    pickupLng: number;
+    deliveryLat: number;
+    deliveryLng: number;
     packageType: string;
     weight: number;
     price?: number;
@@ -44,6 +45,14 @@ export async function createShipment(input: {
 }) {
   const env = getEnv();
   const trackingNumber = await generateUniqueTrackingNumber();
+
+  const route = await getRouteDistance({
+    pickupLat: input.data.pickupLat,
+    pickupLng: input.data.pickupLng,
+    deliveryLat: input.data.deliveryLat,
+    deliveryLng: input.data.deliveryLng,
+    deliveryType: input.data.deliveryType,
+  });
 
   const weight = input.data.weight;
   const computedPrice =
@@ -78,6 +87,8 @@ export async function createShipment(input: {
         price: computedPrice,
         serviceType: input.data.serviceType,
         deliveryType: input.data.deliveryType,
+        distanceMeters: route.distanceMeters,
+        durationSeconds: route.durationSeconds,
         createdById: input.actorRole === "DRIVER" ? null : input.actorUserId,
         events: { create: { status: "CREATED", actorId: input.actorUserId } },
         deliveryProof: {
