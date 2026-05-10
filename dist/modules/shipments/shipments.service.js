@@ -18,9 +18,9 @@ const generateTrackingNumber_1 = require("../../utils/generateTrackingNumber");
 const pagination_1 = require("../../utils/pagination");
 const otp_1 = require("../../utils/otp");
 const shipment_status_1 = require("./shipment-status");
-const pricing_service_1 = require("../pricing/pricing.service");
 const notifications_service_1 = require("../notifications/notifications.service");
 const routing_service_1 = require("../routing/routing.service");
+const pricing_calculator_1 = require("../pricing/pricing-calculator");
 async function generateUniqueTrackingNumber() {
     for (let i = 0; i < 10; i++) {
         const tn = (0, generateTrackingNumber_1.generateTrackingNumber)();
@@ -41,12 +41,17 @@ async function createShipment(input) {
         deliveryType: input.data.deliveryType,
     });
     const weight = input.data.weight;
-    const computedPrice = await (0, pricing_service_1.calculatePrice)({
+    const priceResult = await (0, pricing_calculator_1.computePrice)({
+        pickupLat: input.data.pickupLat,
+        pickupLng: input.data.pickupLng,
+        deliveryLat: input.data.deliveryLat,
+        deliveryLng: input.data.deliveryLng,
+        deliveryType: input.data.deliveryType,
+        serviceType: input.data.serviceType,
         packageType: input.data.packageType,
         weight,
-        serviceType: input.data.serviceType,
-        deliveryType: input.data.deliveryType,
     });
+    const computedPrice = priceResult.price;
     const otp = (0, otp_1.generateOtp)();
     const otpHash = await (0, otp_1.hashOtp)(otp);
     const expiresAt = (0, otp_1.otpExpiresAt)(15);

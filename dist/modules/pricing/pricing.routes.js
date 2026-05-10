@@ -38,9 +38,7 @@ const auth_middleware_1 = require("../../middleware/auth.middleware");
 const role_middleware_1 = require("../../middleware/role.middleware");
 const validate_middleware_1 = require("../../middleware/validate.middleware");
 const pricingController = __importStar(require("./pricing.controller"));
-const priceCalculationController = __importStar(require("./price-calculation.controller"));
 const pricing_validation_1 = require("./pricing.validation");
-const price_calculation_validation_1 = require("./price-calculation.validation");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authMiddleware, (0, role_middleware_1.requireRole)("ADMIN"));
 router.post("/", (0, validate_middleware_1.validate)(pricing_validation_1.createPricingSchema), pricingController.create);
@@ -49,5 +47,4 @@ router.get("/:id", (0, validate_middleware_1.validate)(pricing_validation_1.pric
 router.patch("/:id", (0, validate_middleware_1.validate)(pricing_validation_1.updatePricingSchema), pricingController.update);
 router.patch("/:id/status", (0, validate_middleware_1.validate)(pricing_validation_1.updatePricingStatusSchema), pricingController.updateStatus);
 router.delete("/:id", (0, validate_middleware_1.validate)(pricing_validation_1.pricingIdParamsSchema), pricingController.remove);
-router.post("/calculate", auth_middleware_1.authMiddleware, (0, validate_middleware_1.validate)(price_calculation_validation_1.calculatePriceSchema), priceCalculationController.calculate);
 exports.default = router;

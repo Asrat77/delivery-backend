@@ -7,9 +7,9 @@ import { generateTrackingNumber } from "../../utils/generateTrackingNumber";
 import { toPagination } from "../../utils/pagination";
 import { generateOtp, hashOtp, otpExpiresAt, verifyOtp } from "../../utils/otp";
 import { assertValidTransition } from "./shipment-status";
-import { calculatePrice } from "../pricing/pricing.service";
 import { createAndDispatchNotification } from "../notifications/notifications.service";
 import { getRouteDistance } from "../routing/routing.service";
+import { computePrice } from "../pricing/pricing-calculator";
 
 async function generateUniqueTrackingNumber() {
   for (let i = 0; i < 10; i++) {
@@ -54,12 +54,17 @@ export async function createShipment(input: {
   });
 
   const weight = input.data.weight;
-  const computedPrice = await calculatePrice({
+  const priceResult = await computePrice({
+    pickupLat: input.data.pickupLat,
+    pickupLng: input.data.pickupLng,
+    deliveryLat: input.data.deliveryLat,
+    deliveryLng: input.data.deliveryLng,
+    deliveryType: input.data.deliveryType,
+    serviceType: input.data.serviceType,
     packageType: input.data.packageType,
     weight,
-    serviceType: input.data.serviceType,
-    deliveryType: input.data.deliveryType,
   });
+  const computedPrice = priceResult.price;
 
   const otp = generateOtp();
   const otpHash = await hashOtp(otp);
