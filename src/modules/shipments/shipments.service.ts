@@ -232,10 +232,14 @@ export async function assignDriver(input: { shipmentId: string; driverId: string
   const shipment = await prisma.shipment.findUnique({ where: { id: input.shipmentId } });
   if (!shipment) throw new ApiError(404, "Shipment not found");
 
-  return prisma.shipment.update({
+  const updated = await prisma.shipment.update({
     where: { id: input.shipmentId },
     data: { assignedDriverId: driver.id, assignedById: input.assignedById },
   });
+
+  await prisma.driver.update({ where: { id: driver.id }, data: { isAvailable: false } });
+
+  return updated;
 }
 
 export async function updateShipmentStatus(input: {
@@ -288,6 +292,10 @@ export async function updateShipmentStatus(input: {
       message: `Shipment ${shipment.trackingNumber} delivered.`,
       recipientPhone: shipment.receiverPhone,
     });
+  }
+
+  if (shipment.assignedDriverId && (input.status === "DELIVERED" || input.status === "CANCELLED")) {
+    await prisma.driver.update({ where: { id: shipment.assignedDriverId }, data: { isAvailable: true } });
   }
 
   return updated;
