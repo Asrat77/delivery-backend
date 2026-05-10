@@ -126,6 +126,8 @@ async function listShipments(input) {
         where.senderPhone = { contains: input.query.senderPhone };
     if (input.query.receiverPhone)
         where.receiverPhone = { contains: input.query.receiverPhone };
+    if (input.query.serviceType)
+        where.serviceType = input.query.serviceType;
     if (input.query.dateFrom || input.query.dateTo) {
         where.createdAt = {};
         if (input.query.dateFrom)

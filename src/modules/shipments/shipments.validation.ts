@@ -36,6 +36,7 @@ export const listShipmentsSchema = {
     trackingNumber: z.string().min(3).optional(),
     senderPhone: z.string().min(3).optional(),
     receiverPhone: z.string().min(3).optional(),
+    serviceType: z.enum(["DOMESTIC", "INTERNATIONAL"]).optional(),
     dateFrom: z.string().datetime().optional(),
     dateTo: z.string().datetime().optional(),
   }),

@@ -150,6 +150,7 @@ export async function listShipments(input: {
   if (input.query.trackingNumber) where.trackingNumber = { contains: input.query.trackingNumber, mode: "insensitive" };
   if (input.query.senderPhone) where.senderPhone = { contains: input.query.senderPhone };
   if (input.query.receiverPhone) where.receiverPhone = { contains: input.query.receiverPhone };
+  if (input.query.serviceType) where.serviceType = input.query.serviceType;
 
   if (input.query.dateFrom || input.query.dateTo) {
     where.createdAt = {};

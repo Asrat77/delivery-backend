@@ -36,6 +36,7 @@ exports.listShipmentsSchema = {
         trackingNumber: zod_1.z.string().min(3).optional(),
         senderPhone: zod_1.z.string().min(3).optional(),
         receiverPhone: zod_1.z.string().min(3).optional(),
+        serviceType: zod_1.z.enum(["DOMESTIC", "INTERNATIONAL"]).optional(),
         dateFrom: zod_1.z.string().datetime().optional(),
         dateTo: zod_1.z.string().datetime().optional(),
     }),
