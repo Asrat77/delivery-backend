@@ -18,6 +18,7 @@ const envSchema = zod_1.z.object({
     APP_PUBLIC_URL: zod_1.z.string().default("http://localhost:4000"),
     SMS_PROVIDER: zod_1.z.string().default("mock"),
     OSRM_BASE_URL: zod_1.z.string().default("https://router.project-osrm.org"),
+    ALLOWED_ORIGINS: zod_1.z.string().default("http://localhost:3000,https://bita-ex.vercel.app"),
 });
 function getEnv() {
     const parsed = envSchema.safeParse(process.env);

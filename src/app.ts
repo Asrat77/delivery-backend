@@ -5,6 +5,7 @@ import morgan from "morgan";
 
 import { errorMiddleware } from "./middleware/error.middleware";
 import { errorResponse, successResponse } from "./utils/response";
+import { getEnv } from "./config/env";
 
 import authRoutes from "./modules/auth/auth.routes";
 import usersRoutes from "./modules/users/users.routes";
@@ -24,7 +25,12 @@ import docsRoutes from "./modules/docs/docs.routes";
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: getEnv().ALLOWED_ORIGINS.split(",").map((s) => s.trim()),
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));

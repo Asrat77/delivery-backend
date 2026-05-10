@@ -21,6 +21,7 @@ const envSchema = z.object({
   APP_PUBLIC_URL: z.string().default("http://localhost:4000"),
   SMS_PROVIDER: z.string().default("mock"),
   OSRM_BASE_URL: z.string().default("https://router.project-osrm.org"),
+  ALLOWED_ORIGINS: z.string().default("http://localhost:3000,https://bita-ex.vercel.app"),
 });
 
 export type Env = z.infer<typeof envSchema>;
