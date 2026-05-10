@@ -36,7 +36,6 @@ export async function createShipment(input: {
     deliveryLng: number;
     packageType: string;
     weight: number;
-    price?: number;
     serviceType: ServiceType;
     deliveryType: DeliveryType;
     paymentMethod: PaymentMethod;
@@ -55,14 +54,12 @@ export async function createShipment(input: {
   });
 
   const weight = input.data.weight;
-  const computedPrice =
-    input.data.price ??
-    (await calculatePrice({
-      packageType: input.data.packageType,
-      weight,
-      serviceType: input.data.serviceType,
-      deliveryType: input.data.deliveryType,
-    }));
+  const computedPrice = await calculatePrice({
+    packageType: input.data.packageType,
+    weight,
+    serviceType: input.data.serviceType,
+    deliveryType: input.data.deliveryType,
+  });
 
   const otp = generateOtp();
   const otpHash = await hashOtp(otp);
@@ -162,6 +159,7 @@ export async function listShipments(input: {
   if (input.query.senderPhone) where.senderPhone = { contains: input.query.senderPhone };
   if (input.query.receiverPhone) where.receiverPhone = { contains: input.query.receiverPhone };
   if (input.query.serviceType) where.serviceType = input.query.serviceType;
+  if (input.query.deliveryType) where.deliveryType = input.query.deliveryType;
 
   if (input.query.dateFrom || input.query.dateTo) {
     where.createdAt = {};

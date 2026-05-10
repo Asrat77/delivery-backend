@@ -75,6 +75,7 @@ enum DeliveryType {
 }
 
 enum ServiceType {
+  CITY
   DOMESTIC
   INTERNATIONAL
 }

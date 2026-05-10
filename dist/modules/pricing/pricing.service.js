@@ -69,8 +69,9 @@ async function calculatePrice(input) {
     if (basePrice === 0) {
         throw new ApiError_1.ApiError(422, "No active pricing rule matched and no explicit price provided");
     }
+    let finalPrice = basePrice;
     if (input.serviceType === "INTERNATIONAL") {
-        return Math.round(basePrice * 1.5 * 100) / 100;
+        finalPrice = Math.round(basePrice * 1.5 * 100) / 100;
     }
-    return basePrice;
+    return finalPrice;
 }

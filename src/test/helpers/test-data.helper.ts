@@ -18,7 +18,7 @@ export async function createTestShipment(token: string, input?: Partial<any>) {
     packageType: "SMALL",
     weight: 1,
     deliveryType: "MOTORBIKE",
-    serviceType: "DOMESTIC",
+    serviceType: "CITY",
     paymentMethod: "CASH",
     ...input,
   };

@@ -5,10 +5,14 @@ import { toPagination } from "../../utils/pagination";
 import QRCode from "qrcode";
 
 function getServiceLabel(serviceType: string, deliveryType: string): string {
+  const deliveryMode = deliveryType === "FOOT" ? "Delivery" : "Express";
   if (serviceType === "INTERNATIONAL") {
-    return deliveryType === "FOOT" ? "International Delivery" : "International Express";
+    return `International ${deliveryMode}`;
   }
-  return deliveryType === "FOOT" ? "City Delivery" : "City Express";
+  if (serviceType === "CITY") {
+    return `City ${deliveryMode}`;
+  }
+  return `Domestic ${deliveryMode}`;
 }
 
 function formatDate(date: Date): string {

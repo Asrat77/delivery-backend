@@ -41,13 +41,12 @@ async function createShipment(input) {
         deliveryType: input.data.deliveryType,
     });
     const weight = input.data.weight;
-    const computedPrice = input.data.price ??
-        (await (0, pricing_service_1.calculatePrice)({
-            packageType: input.data.packageType,
-            weight,
-            serviceType: input.data.serviceType,
-            deliveryType: input.data.deliveryType,
-        }));
+    const computedPrice = await (0, pricing_service_1.calculatePrice)({
+        packageType: input.data.packageType,
+        weight,
+        serviceType: input.data.serviceType,
+        deliveryType: input.data.deliveryType,
+    });
     const otp = (0, otp_1.generateOtp)();
     const otpHash = await (0, otp_1.hashOtp)(otp);
     const expiresAt = (0, otp_1.otpExpiresAt)(15);
@@ -138,6 +137,8 @@ async function listShipments(input) {
         where.receiverPhone = { contains: input.query.receiverPhone };
     if (input.query.serviceType)
         where.serviceType = input.query.serviceType;
+    if (input.query.deliveryType)
+        where.deliveryType = input.query.deliveryType;
     if (input.query.dateFrom || input.query.dateTo) {
         where.createdAt = {};
         if (input.query.dateFrom)

@@ -11,10 +11,14 @@ const ApiError_1 = require("../../utils/ApiError");
 const pagination_1 = require("../../utils/pagination");
 const qrcode_1 = __importDefault(require("qrcode"));
 function getServiceLabel(serviceType, deliveryType) {
+    const deliveryMode = deliveryType === "FOOT" ? "Delivery" : "Express";
     if (serviceType === "INTERNATIONAL") {
-        return deliveryType === "FOOT" ? "International Delivery" : "International Express";
+        return `International ${deliveryMode}`;
     }
-    return deliveryType === "FOOT" ? "City Delivery" : "City Express";
+    if (serviceType === "CITY") {
+        return `City ${deliveryMode}`;
+    }
+    return `Domestic ${deliveryMode}`;
 }
 function formatDate(date) {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
