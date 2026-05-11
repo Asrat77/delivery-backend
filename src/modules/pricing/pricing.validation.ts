@@ -9,7 +9,7 @@ export const createPricingSchema = {
   body: z.object({
     name: z.string().min(1),
     type: z.enum(["FIXED", "PER_KG"]),
-    deliveryType: z.enum(["BICYCLE", "MOTORBIKE"]),
+    deliveryType: z.enum(["BICYCLE", "MOTORBIKE", "FOOT"]),
     baseFare: z.coerce.number().positive().optional(),
     ratePerKm: z.coerce.number().positive().optional(),
     packageType: z.string().min(1).optional(),

@@ -10,7 +10,7 @@ exports.createPricingSchema = {
     body: zod_1.z.object({
         name: zod_1.z.string().min(1),
         type: zod_1.z.enum(["FIXED", "PER_KG"]),
-        deliveryType: zod_1.z.enum(["BICYCLE", "MOTORBIKE"]),
+        deliveryType: zod_1.z.enum(["BICYCLE", "MOTORBIKE", "FOOT"]),
         baseFare: zod_1.z.coerce.number().positive().optional(),
         ratePerKm: zod_1.z.coerce.number().positive().optional(),
         packageType: zod_1.z.string().min(1).optional(),

@@ -101,7 +101,7 @@ async function main() {
       name: "City Foot Delivery",
       type: "PER_KG",
       deliveryType: "FOOT",
-      baseFare: 20,
+      baseFare: 15,
       ratePerKm: 5,
       isActive: true,
     },
