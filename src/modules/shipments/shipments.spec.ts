@@ -32,13 +32,15 @@ describe("SHIPMENTS", () => {
     expect(res.body.data.payment).toBeTruthy();
   });
 
-  it("Shipment creation creates COD row only when codAmount is provided", async () => {
+  it("Shipment creation creates COD row always (defaults to computed price)", async () => {
     const { token } = await loginAsStaff();
     const noCod = await createTestShipment(token, { codAmount: undefined });
-    expect(noCod.body.data.codTransaction).toBeNull();
+    expect(noCod.body.data.codTransaction).toBeTruthy();
+    expect(noCod.body.data.codTransaction.amount).toBeTruthy();
 
     const withCod = await createTestShipment(token, { codAmount: 100 });
     expect(withCod.body.data.codTransaction).toBeTruthy();
+    expect(withCod.body.data.codTransaction.amount).toBe("100");
   });
 
   it("Shipment creation creates delivery proof OTP", async () => {

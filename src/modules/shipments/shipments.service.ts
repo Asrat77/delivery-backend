@@ -113,7 +113,9 @@ export async function createShipment(input: {
             ? {
                 create: { amount: input.data.codAmount },
               }
-            : undefined,
+            : {
+                create: { amount: computedPrice },
+              },
       },
       include: { deliveryProof: true, payment: true, codTransaction: true },
     });

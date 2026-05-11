@@ -35,11 +35,13 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_middleware_1 = require("../../middleware/auth.middleware");
+const role_middleware_1 = require("../../middleware/role.middleware");
 const validate_middleware_1 = require("../../middleware/validate.middleware");
 const codController = __importStar(require("./cod.controller"));
 const cod_validation_1 = require("./cod.validation");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authMiddleware);
+router.get("/", (0, role_middleware_1.requireRole)("ADMIN", "STAFF"), (0, validate_middleware_1.validate)(cod_validation_1.listCodSchema), codController.list);
 router.get("/:shipmentId", (0, validate_middleware_1.validate)(cod_validation_1.shipmentIdParamsSchema), codController.get);
 router.patch("/:shipmentId/mark-collected", (0, validate_middleware_1.validate)(cod_validation_1.markCollectedSchema), codController.markCollected);
 exports.default = router;

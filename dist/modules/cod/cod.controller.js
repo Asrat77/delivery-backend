@@ -33,10 +33,14 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.markCollected = exports.get = void 0;
+exports.markCollected = exports.get = exports.list = void 0;
 const asyncHandler_1 = require("../../utils/asyncHandler");
 const response_1 = require("../../utils/response");
 const codService = __importStar(require("./cod.service"));
+exports.list = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
+    const data = await codService.listCod({ query: req.query });
+    return res.status(200).json((0, response_1.successResponse)("COD transactions", data));
+});
 exports.get = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
     const cod = await codService.getCod({
         shipmentId: String(req.params.shipmentId),
