@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRouteDistance = getRouteDistance;
+exports.getRouteWithGeometry = getRouteWithGeometry;
 const env_1 = require("../../config/env");
 function haversineDistance(lat1, lng1, lat2, lng2) {
     const R = 6371;
@@ -41,6 +42,44 @@ async function getRouteDistance(input) {
     }
     catch {
         return haversineFallback(input.pickupLat, input.pickupLng, input.deliveryLat, input.deliveryLng);
+    }
+}
+async function getRouteWithGeometry(input) {
+    const profile = DELIVERY_TO_PROFILE[input.deliveryType];
+    const osrmBase = (0, env_1.getEnv)().OSRM_BASE_URL || "https://router.project-osrm.org";
+    const url = `${osrmBase}/route/v1/${profile}/${input.pickupLng},${input.pickupLat};${input.deliveryLng},${input.deliveryLat}?overview=full&geometries=geojson`;
+    try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+        if (!res.ok)
+            throw new Error(`OSRM HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.code !== "Ok" || !data.routes?.[0] || !data.routes[0].geometry) {
+            throw new Error("OSRM returned no geometry");
+        }
+        const route = data.routes[0];
+        return {
+            distanceMeters: Math.round(route.distance),
+            durationSeconds: Math.round(route.duration),
+            geometry: route.geometry,
+            profile,
+            via: "osrm",
+        };
+    }
+    catch {
+        const km = haversineDistance(input.pickupLat, input.pickupLng, input.deliveryLat, input.deliveryLng);
+        return {
+            distanceMeters: Math.round(km * 1000),
+            durationSeconds: 0,
+            geometry: {
+                type: "LineString",
+                coordinates: [
+                    [input.pickupLng, input.pickupLat],
+                    [input.deliveryLng, input.deliveryLat],
+                ],
+            },
+            profile,
+            via: "haversine",
+        };
     }
 }
 function haversineFallback(lat1, lng1, lat2, lng2) {
