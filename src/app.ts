@@ -27,7 +27,7 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: getEnv().ALLOWED_ORIGINS.split(",").map((s) => s.trim()),
+    origin: true,
     credentials: true,
   })
 );

@@ -9,7 +9,6 @@ const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
 const error_middleware_1 = require("./middleware/error.middleware");
 const response_1 = require("./utils/response");
-const env_1 = require("./config/env");
 const auth_routes_1 = __importDefault(require("./modules/auth/auth.routes"));
 const users_routes_1 = __importDefault(require("./modules/users/users.routes"));
 const drivers_routes_1 = __importDefault(require("./modules/drivers/drivers.routes"));
@@ -27,7 +26,7 @@ const docs_routes_1 = __importDefault(require("./modules/docs/docs.routes"));
 const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: (0, env_1.getEnv)().ALLOWED_ORIGINS.split(",").map((s) => s.trim()),
+    origin: true,
     credentials: true,
 }));
 app.use(express_1.default.json());
