@@ -189,6 +189,7 @@ model Shipment {
   assignedBy   User? @relation("ShipmentAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
 
   events         ShipmentEvent[]
+  routeSnapshot  RouteSnapshot?
   deliveryProof  DeliveryProof?
   payment        Payment?
   codTransaction CodTransaction?
@@ -356,5 +357,20 @@ model ThirdPartyIntegrationLog {
 
   @@index([provider])
   @@index([status])
+  @@index([shipmentId])
+}
+
+model RouteSnapshot {
+  id         String   @id @default(uuid())
+  shipmentId String   @unique
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  geometry Json   // GeoJSON LineString from OSRM /route?overview=full&geometries=geojson
+  distance Int    // meters (OSRM-computed)
+  duration Int    // seconds (OSRM-computed)
+  profile  String // driving | cycling | foot
+
+  createdAt DateTime @default(now())
+
   @@index([shipmentId])
 }
