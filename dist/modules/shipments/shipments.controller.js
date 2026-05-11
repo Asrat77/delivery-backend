@@ -36,6 +36,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyOtp = exports.qr = exports.updateStatus = exports.assignDriver = exports.getById = exports.list = exports.create = void 0;
 const asyncHandler_1 = require("../../utils/asyncHandler");
 const response_1 = require("../../utils/response");
+const prisma_1 = require("../../config/prisma");
+const live_tracking_socket_1 = require("../live-tracking/live-tracking.socket");
 const shipmentsService = __importStar(require("./shipments.service"));
 exports.create = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
     const data = await shipmentsService.createShipment({
@@ -64,6 +66,25 @@ exports.assignDriver = (0, asyncHandler_1.asyncHandler)(async (req, res) => {
         driverId: req.body.driverId,
         assignedById: req.user.id,
     });
+    try {
+        const io = (0, live_tracking_socket_1.getIO)();
+        const driver = await prisma_1.prisma.driver.findUnique({
+            where: { id: req.body.driverId },
+            include: { user: { select: { name: true, phone: true } } },
+        });
+        if (driver) {
+            io.to(`shipment:${shipment.id}`).emit("shipment:driver-assigned", {
+                shipmentId: shipment.id,
+                driverId: driver.id,
+                driverName: driver.user.name,
+                driverPhone: driver.user.phone,
+                timestamp: new Date().toISOString(),
+            });
+        }
+    }
+    catch {
+        // Socket not initialized — running in test or non-socket environment
+    }
     return res.status(200).json((0, response_1.successResponse)("Driver assigned", shipment));
 });
 exports.updateStatus = (0, asyncHandler_1.asyncHandler)(async (req, res) => {

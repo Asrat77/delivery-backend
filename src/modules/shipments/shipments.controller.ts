@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { successResponse } from "../../utils/response";
+import { prisma } from "../../config/prisma";
+import { getIO } from "../live-tracking/live-tracking.socket";
 import * as shipmentsService from "./shipments.service";
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
@@ -33,6 +35,26 @@ export const assignDriver = asyncHandler(async (req: Request, res: Response) => 
     driverId: req.body.driverId,
     assignedById: req.user!.id,
   });
+
+  try {
+    const io = getIO();
+    const driver = await prisma.driver.findUnique({
+      where: { id: req.body.driverId },
+      include: { user: { select: { name: true, phone: true } } },
+    });
+    if (driver) {
+      io.to(`shipment:${shipment.id}`).emit("shipment:driver-assigned", {
+        shipmentId: shipment.id,
+        driverId: driver.id,
+        driverName: driver.user.name,
+        driverPhone: driver.user.phone,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch {
+    // Socket not initialized — running in test or non-socket environment
+  }
+
   return res.status(200).json(successResponse("Driver assigned", shipment));
 });
 
