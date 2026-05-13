@@ -107,6 +107,28 @@ async function main() {
     },
   });
 
+  const popularRoutes = [
+    { id: "ET-DE", origin: "Addis Ababa", destination: "Berlin", transitTime: "3–5 days", pricing: { economy: 42, standard: 68, premium: 85 } },
+    { id: "ET-AE", origin: "Addis Ababa", destination: "Dubai", transitTime: "1–2 days", pricing: { economy: 22, standard: 35, premium: 50 } },
+    { id: "ET-GB", origin: "Addis Ababa", destination: "London", transitTime: "4–6 days", pricing: { economy: 48, standard: 75, premium: 95 } },
+    { id: "ET-US", origin: "Addis Ababa", destination: "Washington", transitTime: "5–7 days", pricing: { economy: 62, standard: 95, premium: 120 } },
+    { id: "ET-KE", origin: "Addis Ababa", destination: "Nairobi", transitTime: "1–2 days", pricing: { economy: 12, standard: 18, premium: 30 } },
+    { id: "ET-SA", origin: "Addis Ababa", destination: "Riyadh", transitTime: "2–3 days", pricing: { economy: 26, standard: 40, premium: 55 } },
+  ];
+
+  for (const route of popularRoutes) {
+    await prisma.popularRoute.upsert({
+      where: { id: route.id },
+      update: {
+        origin: route.origin,
+        destination: route.destination,
+        transitTime: route.transitTime,
+        pricing: route.pricing,
+      },
+      create: route,
+    });
+  }
+
   // eslint-disable-next-line no-console
   console.log("Seed complete", { adminId: admin.id });
 }
