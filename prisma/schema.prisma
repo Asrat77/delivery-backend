@@ -404,3 +404,16 @@ model Issue {
   @@index([userId])
   @@index([createdAt])
 }
+
+model PopularRoute {
+  id          String   @id
+  origin      String
+  destination String
+  transitTime String
+  pricing     Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([origin])
+  @@index([destination])
+}
