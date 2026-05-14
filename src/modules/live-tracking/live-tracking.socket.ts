@@ -39,17 +39,17 @@ export function createSocketServer(httpServer: HttpServer): TypedServer {
     pingTimeout: 20_000,
   });
 
-  // io!.use(async (socket, next) => {
-  //   try {
-  //     const { token } = (socket.handshake.auth as SocketAuth) || {};
-  //     if (!token) return next(new Error("Authentication required"));
+  io!.use(async (socket, next) => {
+    try {
+      const { token } = (socket.handshake.auth as SocketAuth) || {};
+      if (!token) return next(new Error("Authentication required"));
 
-  //     socket.user = await verifyToken(token);
-  //     next();
-  //   } catch {
-  //     next(new Error("Invalid token"));
-  //   }
-  // });
+      socket.user = await verifyToken(token);
+      next();
+    } catch {
+      next(new Error("Invalid token"));
+    }
+  });
 
   io!.on("connection", (socket: TypedSocket) => {
     const userId = socket.user!.id;
