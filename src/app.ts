@@ -2,6 +2,8 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import swaggerUiDist from "swagger-ui-dist";
+import path from "path";
 
 import { errorMiddleware } from "./middleware/error.middleware";
 import { errorResponse, successResponse } from "./utils/response";
@@ -58,6 +60,16 @@ app.use("/reports", reportsRoutes);
 app.use("/docs", docsRoutes);
 app.use("/issues", issuesRoutes);
 app.use("/routes", routesRoutes);
+
+const swaggerDistPath = swaggerUiDist.getAbsoluteFSPath();
+const swaggerAssetsRequestedFromRoot = ["swagger-ui.css", "index.css", "favicon-32x32.png",
+  "favicon-16x16.png", "swagger-ui-bundle.js", "swagger-ui-standalone-preset.js",
+  "swagger-initializer.js"];
+for (const asset of swaggerAssetsRequestedFromRoot) {
+  app.get(`/${asset}`, (_req, res) => {
+    res.sendFile(path.join(swaggerDistPath, asset));
+  });
+}
 
 app.use((_req, res) => {
   return res.status(404).json(errorResponse("Route not found", 404, null));

@@ -15,6 +15,9 @@ export const verifyRegistration = asyncHandler(async (req: Request, res: Respons
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const result = await authService.sendLoginOtp(req.body);
+  if ("token" in result) {
+    return res.status(200).json(successResponse("Login successful", { token: result.token, user: result.user }));
+  }
   return res.status(200).json(successResponse("OTP sent to phone", result));
 });
 

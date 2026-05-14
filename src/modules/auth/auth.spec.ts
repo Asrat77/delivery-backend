@@ -134,9 +134,19 @@ describe("AUTH — Login OTP Flow", () => {
   it("POST /auth/login should send OTP for valid credentials", async () => {
     const res = await request(app)
       .post("/auth/login")
+      .send({ emailOrPhone: "staff@example.com", password: "Password123!" });
+    expect(res.status).toBe(200);
+    expect(res.body.data.phone).toBe("+251900000002");
+  });
+
+  it("POST /auth/login should return token directly for admin", async () => {
+    const res = await request(app)
+      .post("/auth/login")
       .send({ emailOrPhone: "admin@example.com", password: "Password123!" });
     expect(res.status).toBe(200);
-    expect(res.body.data.phone).toBe("+251900000001");
+    expect(res.body.data.token).toBeTruthy();
+    expect(res.body.data.user.email).toBe("admin@example.com");
+    expect(res.body.data.user.role).toBe("ADMIN");
   });
 
   it("POST /auth/login should reject wrong password", async () => {
@@ -157,9 +167,9 @@ describe("AUTH — Login OTP Flow", () => {
   it("POST /auth/login should send OTP without password", async () => {
     const res = await request(app)
       .post("/auth/login")
-      .send({ emailOrPhone: "admin@example.com" });
+      .send({ emailOrPhone: "staff@example.com" });
     expect(res.status).toBe(200);
-    expect(res.body.data.phone).toBe("+251900000001");
+    expect(res.body.data.phone).toBe("+251900000002");
   });
 
   it("POST /auth/login should reject non-existent user without password", async () => {
@@ -172,16 +182,16 @@ describe("AUTH — Login OTP Flow", () => {
   it("POST /auth/verify-login should return token with mock OTP", async () => {
     await request(app)
       .post("/auth/login")
-      .send({ emailOrPhone: "admin@example.com", password: "Password123!" })
+      .send({ emailOrPhone: "staff@example.com", password: "Password123!" })
       .expect(200);
 
     const res = await request(app)
       .post("/auth/verify-login")
-      .send({ phone: "+251900000001", otp: "12345" })
+      .send({ phone: "+251900000002", otp: "12345" })
       .expect(200);
 
     expect(res.body.data.token).toBeTruthy();
-    expect(res.body.data.user.email).toBe("admin@example.com");
+    expect(res.body.data.user.email).toBe("staff@example.com");
   });
 
   it("POST /auth/verify-login should reject invalid OTP", async () => {

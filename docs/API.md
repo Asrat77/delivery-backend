@@ -117,6 +117,23 @@ Body:
 }
 ```
 
+- **Admin users**: returns `200` with `data.token` + `data.user` directly (OTP skipped).
+- **Non-admin users** (STAFF, DRIVER, CUSTOMER): returns `200` with `data.phone` — then call `/auth/verify-login` to get the token.
+
+### `POST /auth/verify-login`
+
+Auth: none  
+Verifies the OTP sent by `/auth/login` for non-admin users.
+
+Body:
+
+```json
+{
+  "phone": "+251900000002",
+  "otp": "12345"
+}
+```
+
 Response `200` (`data.token` + `data.user`).
 
 ### `GET /auth/me`

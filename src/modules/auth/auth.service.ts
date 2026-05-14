@@ -144,6 +144,17 @@ export async function sendLoginOtp(input: { emailOrPhone: string; password?: str
     if (!ok) throw new ApiError(401, "Invalid credentials");
   }
 
+  // ADMIN users skip OTP — return token directly
+  if (user.role === "ADMIN") {
+    const adminUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: safeUserSelect(),
+    });
+    if (!adminUser) throw new ApiError(401, "User not found");
+    const token = signToken(adminUser);
+    return { token, user: adminUser };
+  }
+
   const otp = generateOtp();
   const otpHash = await hashOtp(otp);
   const expiresAt = otpExpiresAt(10);

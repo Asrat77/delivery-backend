@@ -23,12 +23,23 @@ router.get("/json", (_req, res) => {
   res.json(swaggerDocument);
 });
 
+function fixSwaggerDistAssetPaths(html: string): string {
+  return html
+    .replace('href="index.css"', 'href="/docs/index.css"')
+    .replace('href="./swagger-ui.css"', 'href="/docs/swagger-ui.css"')
+    .replace('href="./favicon-32x32.png"', 'href="/docs/favicon-32x32.png"')
+    .replace('href="./favicon-16x16.png"', 'href="/docs/favicon-16x16.png"')
+    .replace('src="./swagger-ui-bundle.js"', 'src="/docs/swagger-ui-bundle.js"')
+    .replace('src="./swagger-ui-standalone-preset.js"', 'src="/docs/swagger-ui-standalone-preset.js"')
+    .replace('src="./swagger-initializer.js"', 'src="/docs/swagger-initializer.js"');
+}
+
 router.get("/", (_req, res) => {
   if (!swaggerDocument) {
     return res.status(503).json({ success: false, message: "Swagger spec not loaded" });
   }
   const indexHtml = path.join(swaggerUiDist.getAbsoluteFSPath(), "index.html");
-  res.type("html").send(fs.readFileSync(indexHtml, "utf8"));
+  res.type("html").send(fixSwaggerDistAssetPaths(fs.readFileSync(indexHtml, "utf8")));
 });
 
 // Serve a custom swagger-initializer.js that loads the spec from /docs/json
@@ -54,6 +65,10 @@ router.use("/swagger-ui-standalone-preset.js", (_req, res) => {
 router.use("/swagger-ui.css", (_req, res) => {
   res.type("text/css")
      .sendFile(path.join(swaggerUiDist.getAbsoluteFSPath(), "swagger-ui.css"));
+});
+router.use("/index.css", (_req, res) => {
+  res.type("text/css")
+     .sendFile(path.join(swaggerUiDist.getAbsoluteFSPath(), "index.css"));
 });
 router.use("/favicon-32x32.png", (_req, res) => {
   res.type("image/png").sendFile(path.join(swaggerUiDist.getAbsoluteFSPath(), "favicon-32x32.png"));
