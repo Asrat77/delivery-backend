@@ -5,7 +5,7 @@ import { getEnv } from "../../config/env";
 import { ApiError } from "../../utils/ApiError";
 import { generateTrackingNumber } from "../../utils/generateTrackingNumber";
 import { toPagination } from "../../utils/pagination";
-import { generateOtp, hashOtp, otpExpiresAt, verifyOtp } from "../../utils/otp";
+import { generateOtp, hashOtp, otpExpiresAt, verifyOtp, isMockOtp, isMockSmsProvider, MOCK_OTP_CODE } from "../../utils/otp";
 import { assertValidTransition } from "./shipment-status";
 import { createAndDispatchNotification } from "../notifications/notifications.service";
 import { getRouteDistance } from "../routing/routing.service";
@@ -66,7 +66,7 @@ export async function createShipment(input: {
   });
   const computedPrice = priceResult.price;
 
-  const otp = generateOtp();
+  const otp = isMockSmsProvider() ? MOCK_OTP_CODE : generateOtp();
   const otpHash = await hashOtp(otp);
   const expiresAt = otpExpiresAt(15);
 
@@ -333,7 +333,9 @@ export async function verifyShipmentOtp(input: { shipmentId: string; otp: string
   if (proof.otpExpiresAt && proof.otpExpiresAt.getTime() < Date.now()) throw new ApiError(400, "OTP expired");
 
   const ok = await verifyOtp(input.otp, proof.otpCodeHash);
-  if (!ok) throw new ApiError(400, "Invalid OTP");
+  if (!ok && !isMockOtp(input.otp)) {
+    throw new ApiError(400, "Invalid OTP");
+  }
 
   return prisma.deliveryProof.update({
     where: { id: proof.id },
