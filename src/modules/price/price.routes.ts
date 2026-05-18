@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middleware/auth.middleware";
+import { publicRateLimiter } from "../../middleware/rateLimiter.middleware";
 import { validate } from "../../middleware/validate.middleware";
 import { calculate } from "./price.controller";
 import { calculatePriceSchema } from "./price.validation";
@@ -8,7 +8,7 @@ const router = Router();
 
 router.post(
   "/calculate",
-  authMiddleware,
+  publicRateLimiter(10),
   validate(calculatePriceSchema),
   calculate
 );

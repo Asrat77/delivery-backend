@@ -475,6 +475,53 @@ Notes:
 
 ---
 
+## Price Calculator (`/price`)
+
+Auth: none  
+Rate limit: 10 requests per minute per IP.
+
+Returns a price estimate for a delivery without requiring authentication.
+Use this on the landing page so visitors can calculate shipment costs before signing up.
+
+### `POST /price/calculate`
+
+Body:
+
+```json
+{
+  "deliveryType": "MOTORBIKE",
+  "pickupLat": 9.03,
+  "pickupLng": 38.74,
+  "deliveryLat": 9.01,
+  "deliveryLng": 38.76,
+  "serviceType": "CITY"
+}
+```
+
+Fields:
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `deliveryType` | `"BICYCLE" \| "MOTORBIKE" \| "FOOT"` | yes | |
+| `pickupLat` | number | yes | -90..90 |
+| `pickupLng` | number | yes | -180..180 |
+| `deliveryLat` | number | yes | -90..90 |
+| `deliveryLng` | number | yes | -180..180 |
+| `serviceType` | `"CITY" \| "DOMESTIC" \| "INTERNATIONAL"` | no | defaults to `CITY` |
+
+On rate limit exceeded (429):
+
+```json
+{
+  "success": false,
+  "message": "Too many requests. Please try again later.",
+  "statusCode": 429,
+  "details": null
+}
+```
+
+---
+
 ## Pricing (`/pricing`) — ADMIN only
 
 All `/pricing/*` endpoints require an **ADMIN** token.
