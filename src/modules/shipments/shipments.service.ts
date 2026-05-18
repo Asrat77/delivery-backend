@@ -245,17 +245,27 @@ export async function assignDriver(input: { shipmentId: string; driverId: string
   }
   if (driver.user.role !== "DRIVER") throw new ApiError(400, "User is not a DRIVER");
 
+  if (!driver.isAvailable) throw new ApiError(409, "Driver is not available");
+
   const shipment = await prisma.shipment.findUnique({ where: { id: input.shipmentId } });
   if (!shipment) throw new ApiError(404, "Shipment not found");
 
-  const updated = await prisma.shipment.update({
-    where: { id: input.shipmentId },
-    data: { assignedDriverId: driver.id, assignedById: input.assignedById },
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.shipment.updateMany({
+      where: { id: input.shipmentId, assignedDriverId: null },
+      data: { assignedDriverId: driver!.id, assignedById: input.assignedById },
+    });
+
+    if (updated.count === 0) {
+      throw new ApiError(409, "Shipment already assigned to a driver");
+    }
+
+    await tx.driver.update({ where: { id: driver!.id }, data: { isAvailable: false } });
+
+    return tx.shipment.findUnique({ where: { id: input.shipmentId } });
   });
 
-  await prisma.driver.update({ where: { id: driver.id }, data: { isAvailable: false } });
-
-  return updated;
+  return result!;
 }
 
 export async function updateShipmentStatus(input: {
